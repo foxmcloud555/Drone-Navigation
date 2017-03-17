@@ -25,7 +25,27 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// Map depth range to byte range
         /// </summary>
         private const int MapDepthToByte = 8000 / 256;
-        
+
+        /// <summary>
+        /// Maximum value (as a float) that can be returned by the InfraredFrame
+        /// </summary>
+        private const float InfraredSourceValueMaximum = (float)ushort.MaxValue;
+
+        /// <summary>
+        /// The value by which the infrared source data will be scaled
+        /// </summary>
+        private const float InfraredSourceScale = 0.75f;
+
+        /// <summary>
+        /// Smallest value to display when the infrared data is normalized
+        /// </summary>
+        private const float InfraredOutputValueMinimum = 0.01f;
+
+        /// <summary>
+        /// Largest value to display when the infrared data is normalized
+        /// </summary>
+        private const float InfraredOutputValueMaximum = 1.0f;
+
         /// <summary>
         /// Active Kinect sensor
         /// </summary>
@@ -37,14 +57,30 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         private DepthFrameReader depthFrameReader = null;
 
         /// <summary>
+        /// Reader for infrared frames
+        /// </summary>
+        private InfraredFrameReader infraredFrameReader = null;
+
+        /// <summary>
         /// Description of the data contained in the depth frame
         /// </summary>
         private FrameDescription depthFrameDescription = null;
             
         /// <summary>
+        /// Description (width, height, etc) of the infrared frame data
+        /// </summary>
+        private FrameDescription infraredFrameDescription = null;
+
+        /// <summary>
         /// Bitmap to display
         /// </summary>
         private WriteableBitmap depthBitmap = null;
+
+
+        /// <summary>
+        /// Bitmap to display
+        /// </summary>
+        private WriteableBitmap infraredBitmap = null;
 
         /// <summary>
         /// Intermediate storage for frame data converted to color
@@ -66,18 +102,23 @@ namespace Microsoft.Samples.Kinect.DepthBasics
 
             // open the reader for the depth frames
             this.depthFrameReader = this.kinectSensor.DepthFrameSource.OpenReader();
+            this.infraredFrameReader = this.kinectSensor.InfraredFrameSource.OpenReader();
 
             // wire handler for frame arrival
             this.depthFrameReader.FrameArrived += this.Reader_FrameArrived;
+            this.infraredFrameReader.FrameArrived += this.Reader_InfraredFrameArrived;
 
             // get FrameDescription from DepthFrameSource
             this.depthFrameDescription = this.kinectSensor.DepthFrameSource.FrameDescription;
+            // get FrameDescription from InfraredFrameSource
+            this.infraredFrameDescription = this.kinectSensor.InfraredFrameSource.FrameDescription;
 
             // allocate space to put the pixels being received and converted
             this.depthPixels = new byte[this.depthFrameDescription.Width * this.depthFrameDescription.Height];
 
             // create the bitmap to display
             this.depthBitmap = new WriteableBitmap(this.depthFrameDescription.Width, this.depthFrameDescription.Height, 96.0, 96.0, PixelFormats.Gray8, null);
+            this.infraredBitmap = new WriteableBitmap(this.infraredFrameDescription.Width, this.infraredFrameDescription.Height, 96.0, 96.0, PixelFormats.Gray32Float, null);
 
             // set IsAvailableChanged event notifier
             this.kinectSensor.IsAvailableChanged += this.Sensor_IsAvailableChanged;
@@ -149,6 +190,13 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 // DepthFrameReader is IDisposable
                 this.depthFrameReader.Dispose();
                 this.depthFrameReader = null;
+            }
+
+            if (this.infraredFrameReader != null)
+            {
+                // InfraredFrameReader is IDisposable
+                this.infraredFrameReader.Dispose();
+                this.infraredFrameReader = null;
             }
 
             if (this.kinectSensor != null)
@@ -239,6 +287,33 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         }
 
         /// <summary>
+        /// Handles the infrared frame data arriving from the sensor
+        /// </summary>
+        /// <param name="sender">object sending the event</param>
+        /// <param name="e">event arguments</param>
+        private void Reader_InfraredFrameArrived(object sender, InfraredFrameArrivedEventArgs e)
+        {
+            // InfraredFrame is IDisposable
+            using (InfraredFrame infraredFrame = e.FrameReference.AcquireFrame())
+            {
+                if (infraredFrame != null)
+                {
+                    // the fastest way to process the infrared frame data is to directly access 
+                    // the underlying buffer
+                    using (Microsoft.Kinect.KinectBuffer infraredBuffer = infraredFrame.LockImageBuffer())
+                    {
+                        // verify data and write the new infrared frame data to the display bitmap
+                        if (((this.infraredFrameDescription.Width * this.infraredFrameDescription.Height) == (infraredBuffer.Size / this.infraredFrameDescription.BytesPerPixel)) &&
+                            (this.infraredFrameDescription.Width == this.infraredBitmap.PixelWidth) && (this.infraredFrameDescription.Height == this.infraredBitmap.PixelHeight))
+                        {
+                            this.ProcessInfraredFrameData(infraredBuffer.UnderlyingBuffer, infraredBuffer.Size);
+                        }
+                    }
+                }
+            }
+        }
+
+        /// <summary>
         /// Directly accesses the underlying image buffer of the DepthFrame to 
         /// create a displayable bitmap.
         /// This function requires the /unsafe compiler option as we make use of direct
@@ -262,7 +337,43 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 // To convert to a byte, we're mapping the depth value to the byte range.
                 // Values outside the reliable depth range are mapped to 0 (black).
                 this.depthPixels[i] = (byte)(depth >= minDepth && depth <= maxDepth ? (depth / MapDepthToByte) : 0);
+
+                
             }
+        }
+
+        /// <summary>
+        /// Directly accesses the underlying image buffer of the InfraredFrame to 
+        /// create a displayable bitmap.
+        /// This function requires the /unsafe compiler option as we make use of direct
+        /// access to the native memory pointed to by the infraredFrameData pointer.
+        /// </summary>
+        /// <param name="infraredFrameData">Pointer to the InfraredFrame image data</param>
+        /// <param name="infraredFrameDataSize">Size of the InfraredFrame image data</param>
+        private unsafe void ProcessInfraredFrameData(IntPtr infraredFrameData, uint infraredFrameDataSize)
+        {
+            // infrared frame data is a 16 bit value
+            ushort* frameData = (ushort*)infraredFrameData;
+
+            // lock the target bitmap
+            this.infraredBitmap.Lock();
+
+            // get the pointer to the bitmap's back buffer
+            float* backBuffer = (float*)this.infraredBitmap.BackBuffer;
+
+            // process the infrared data
+            for (int i = 0; i < (int)(infraredFrameDataSize / this.infraredFrameDescription.BytesPerPixel); ++i)
+            {
+                // since we are displaying the image as a normalized grey scale image, we need to convert from
+                // the ushort data (as provided by the InfraredFrame) to a value from [InfraredOutputValueMinimum, InfraredOutputValueMaximum]
+                backBuffer[i] = Math.Min(InfraredOutputValueMaximum, (((float)frameData[i] / InfraredSourceValueMaximum * InfraredSourceScale) * (1.0f - InfraredOutputValueMinimum)) + InfraredOutputValueMinimum);
+            }
+
+            // mark the entire bitmap as needing to be drawn
+            this.infraredBitmap.AddDirtyRect(new Int32Rect(0, 0, this.infraredBitmap.PixelWidth, this.infraredBitmap.PixelHeight));
+
+            // unlock the bitmap
+            this.infraredBitmap.Unlock();
         }
 
         /// <summary>
