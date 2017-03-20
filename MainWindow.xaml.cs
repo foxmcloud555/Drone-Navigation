@@ -14,6 +14,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
     using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
+    using System.Drawing;
     using Microsoft.Kinect;
     // Image processing libraries
     using Emgu.CV;
@@ -93,10 +94,10 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// <summary>
         /// Gets the bitmap to display
         /// </summary>
-        public ImageSource ImageSource
-        {
-            get { return this.m_colourBitmap; }
-        }
+ //       public ImageSource ImageSource
+//        {
+ //           get { return this.m_colourBitmap; }
+ //       }
 
         /// <summary>
         /// Gets or sets the current status text to display
@@ -199,13 +200,14 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                       m_colourBitmap.PixelWidth * sizeof(int),
                       0);
 
-                    //Bitmap
-                    Mat test;
-                    //Mat result = new Mat();
-                    //result.Create(m_colourBitmap.PixelHeight, m_colourBitmap.PixelWidth, DepthType.Cv8U, 4);
-                    //m_colourBitmap.CopyPixels(Int32Rect.Empty, result.DataPointer, result.Step * result.Rows, result.Step);
+                    //Bitmap matrix
+                    Image<Rgba, Byte> image = new Image<Rgba, Byte>(width, height); //specify the width and height here
+                    image.Bytes = pixels; //your byte array
+         
+        //            Mat bitmapMat = new Mat(m_colourBitmap.PixelHeight, m_colourBitmap.PixelWidth, Emgu.CV.CvEnum.DepthType.Cv32F, 4);
+        //            m_colourBitmap.CopyPixels(Int32Rect.Empty, bitmapMat.DataPointer, bitmapMat.Step * bitmapMat.Rows, bitmapMat.Step);
 
-                    //Image<Bgra, Byte> frameFromKinect = result.ToOpenCVImage<Bgra, Byte>();
+                    CvInvoke.Imshow("Output", image.Mat);
                 }
             }
         }
