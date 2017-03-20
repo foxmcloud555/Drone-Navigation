@@ -203,11 +203,15 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     //Bitmap matrix
                     Image<Rgba, Byte> image = new Image<Rgba, Byte>(width, height); //specify the width and height here
                     image.Bytes = pixels; //your byte array
-         
-        //            Mat bitmapMat = new Mat(m_colourBitmap.PixelHeight, m_colourBitmap.PixelWidth, Emgu.CV.CvEnum.DepthType.Cv32F, 4);
-        //            m_colourBitmap.CopyPixels(Int32Rect.Empty, bitmapMat.DataPointer, bitmapMat.Step * bitmapMat.Rows, bitmapMat.Step);
 
-                    CvInvoke.Imshow("Output", image.Mat);
+                    //            Mat bitmapMat = new Mat(m_colourBitmap.PixelHeight, m_colourBitmap.PixelWidth, Emgu.CV.CvEnum.DepthType.Cv32F, 4);
+                    //            m_colourBitmap.CopyPixels(Int32Rect.Empty, bitmapMat.DataPointer, bitmapMat.Step * bitmapMat.Rows, bitmapMat.Step);
+
+                    // convert frame from RGB to HSV colorspace
+                    Bitmap bmp = image.ToBitmap();
+                    Image<Hsv, Byte> hsvImage = new Image<Hsv, byte>(bmp);
+                    
+                    CvInvoke.Imshow("Output", hsvImage.Mat);
                 }
             }
         }
