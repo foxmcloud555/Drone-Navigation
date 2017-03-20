@@ -210,7 +210,18 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     // convert frame from RGB to HSV colorspace
                     Bitmap bmp = image.ToBitmap();
                     Image<Hsv, Byte> hsvImage = new Image<Hsv, byte>(bmp);
-                    
+
+                    // filter HSV imageand store filtered image to threshold matrix
+                    //              Mat threshold;
+                    //              CvInvoke.InRange(hsvImage, ,, threshold);
+
+                    // eliminate noise to emphasize the filtered objects
+
+                    // We can now pass this filtered result to the tracker
+                    // we will only be able to get x,y data from this. but thats why we
+                    // kept in the depth buffer, we may be able to cross reference and
+                    // extract the depth value to get our z coordinate.
+
                     CvInvoke.Imshow("Output", hsvImage.Mat);
                 }
             }
