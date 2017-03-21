@@ -35,16 +35,6 @@
             - isolate results from any remaining artefacts we dont want.
         */
 
-        // Filter values - maybe add some gui elements to add some calibration functionality to it.
-        int HUE_MIN = 0;
-        int HUE_MAX = 256;
-        int SAT_MIN = 0;
-        int SAT_MAX = 256;
-        int VAL_MIN = 0;
-        int VAL_MAX = 256;
-        // max number of objects to be tracked
-        const int MAX_TRACKED_OBJECTS = 50;
-
         /// <summary>
         /// Wrapper function to convert an image from RGB to Hue Saturation Value
         /// </summary>

@@ -1,7 +1,7 @@
 ﻿<Window x:Class="Microsoft.Samples.Kinect.DepthBasics.MainWindow"
         xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
         xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-        Title="Depth Basics" 
+        Title="Kinect Tracker" 
         Height="600" Width="700" 
         Closing="MainWindow_Closing">
     <Window.Resources>
@@ -10,30 +10,6 @@
         <SolidColorBrush x:Key="KinectBlueBrush" Color="#ff00BCF2" />
         <Style TargetType="{x:Type Image}">
             <Setter Property="SnapsToDevicePixels" Value="True" />
-        </Style>
-        <Style TargetType="{x:Type Button}" x:Key="ScreenshotButton" >
-            <Setter Property="Template">
-                <Setter.Value>
-                    <ControlTemplate TargetType="{x:Type Button}">
-                        <Grid>
-                            <StackPanel Orientation="Horizontal" Background="Transparent">
-                                <TextBlock x:Name="ScreenshotText" Text="{TemplateBinding Content}" TextAlignment="Left"  VerticalAlignment="Center" Foreground="{StaticResource KinectPurpleBrush}" FontSize="15" />
-                                <Grid Margin="9,0,0,0">
-                                    <Image x:Name="ScreenshotNormal" Source="Images\ScreenshotNormal.png" Stretch="None" HorizontalAlignment="Center" />
-                                    <Image x:Name="ScreenshotHover" Source="Images\ScreenshotHover.png" Stretch="None" HorizontalAlignment="Center" Visibility="Collapsed" />
-                                </Grid>
-                            </StackPanel>
-                        </Grid>
-                        <ControlTemplate.Triggers>
-                            <Trigger Property="IsMouseOver" Value="true">
-                                <Setter Property="Visibility" Value="Collapsed" TargetName="ScreenshotNormal" />
-                                <Setter Property="Visibility" Value="Visible" TargetName="ScreenshotHover" />
-                                <Setter Property="Foreground" Value="{StaticResource KinectBlueBrush}" TargetName="ScreenshotText" />
-                            </Trigger>
-                        </ControlTemplate.Triggers>
-                    </ControlTemplate>
-                </Setter.Value>
-            </Setter>
         </Style>
     </Window.Resources>
     <Grid Margin="10 0 10 0">
@@ -45,7 +21,7 @@
         </Grid.RowDefinitions>
 
         <Image Grid.Row="0" Source="Images\Logo.png" HorizontalAlignment="Left" Stretch="Fill" Height="32" Width="81" Margin="0 10 0 5" />
-        <TextBlock Grid.Row="0" Margin="0 0 -1 0" HorizontalAlignment="Right" VerticalAlignment="Bottom" Foreground="{StaticResource MediumGreyBrush}" FontFamily="Segoe UI" FontSize="18">Depth Basics</TextBlock>
+        <TextBlock Grid.Row="0" Margin="0 0 -1 0" HorizontalAlignment="Right" VerticalAlignment="Bottom" Foreground="{StaticResource MediumGreyBrush}" FontFamily="Segoe UI" FontSize="18">Kinect Tracker</TextBlock>
         <Image Grid.Row="0" Source="Images\Status.png" Stretch="None" HorizontalAlignment="Center" Margin="0 0 0 5" />
 
         <Viewbox Grid.Row="1" HorizontalAlignment="Center">
@@ -55,5 +31,44 @@
         <StatusBar Grid.Row="3" HorizontalAlignment="Stretch" Name="statusBar" VerticalAlignment="Bottom" Background="White" Foreground="{StaticResource MediumGreyBrush}">
             <StatusBarItem Content="{Binding StatusText}" />
         </StatusBar>
+
+        <Label x:Name="CFTitle" Content="Crazy Fly Tracker Filter" HorizontalAlignment="Left" Margin="30,0,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Label x:Name="CFHueMinLabel" Content="Hue Min:" HorizontalAlignment="Left" Margin="30,25,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="CFHueMinSlider" HorizontalAlignment="Left" Margin="30,50,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="CFHueMaxLabel" Content="Hue Max:" HorizontalAlignment="Left" Margin="30,75,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="CFHueMaxSlider" HorizontalAlignment="Left" Margin="30,100,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="CFSatMinLabel" Content="Saturation Min:" HorizontalAlignment="Left" Margin="30,125,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="CFSatMinSlider" HorizontalAlignment="Left" Margin="30,150,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="CFSatMaxLabel" Content="Saturation Max:" HorizontalAlignment="Left" Margin="30,175,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="CFSatMaxSlider" HorizontalAlignment="Left" Margin="30,200,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="CFValMinLabel" Content="Value Min:" HorizontalAlignment="Left" Margin="30,225,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="CFValMinSlider" HorizontalAlignment="Left" Margin="30,250,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="CFValMaxLabel" Content="Value Max:" HorizontalAlignment="Left" Margin="30,275,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="CFValMaxSlider" HorizontalAlignment="Left" Margin="30,300,0,0" VerticalAlignment="Top" Width="250" Grid.Row="1" Maximum="256" SmallChange="1"/>
+
+        <Label x:Name="TTitle" Content="Target Tracker Filter" HorizontalAlignment="Left" Margin="400,0,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Label x:Name="THueMinLabel" Content="Hue Min:" HorizontalAlignment="Left" Margin="400,25,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="THueMinSlider" HorizontalAlignment="Left" Margin="400,50,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="THueMaxLabel" Content="Hue Max:" HorizontalAlignment="Left" Margin="400,75,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="THueMaxSlider" HorizontalAlignment="Left" Margin="400,100,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="TSatMinLabel" Content="Saturation Min:" HorizontalAlignment="Left" Margin="400,125,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="TSatMinSlider" HorizontalAlignment="Left" Margin="400,150,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="TSatMaxLabel" Content="Saturation Max:" HorizontalAlignment="Left" Margin="400,175,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="TSatMaxSlider" HorizontalAlignment="Left" Margin="400,200,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="TValMinLabel" Content="Value Min:" HorizontalAlignment="Left" Margin="400,225,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="TValMinSlider" HorizontalAlignment="Left" Margin="400,250,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Label x:Name="TValMaxLabel" Content="Value Max:" HorizontalAlignment="Left" Margin="400,275,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Slider x:Name="TValMaxSlider" HorizontalAlignment="Left" Margin="400,300,0,0" VerticalAlignment="Top" Width="250" Grid.Row="1" Maximum="256" SmallChange="1"/>
+
+        <Label x:Name="GuideLabel1" Content="Adjust the sliders to calibrate the crazyfly and target. Change the viewport output to only show the calibration data" HorizontalAlignment="Left" Margin="30,325,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <Label x:Name="GuideLabel2" Content="for the item you are calibrating. Correct calibration is when the object is the only clearly visible object." HorizontalAlignment="Left" Margin="30,340,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        
+        <Label x:Name="ViewTypeLabel" Content="Viewport Output:" HorizontalAlignment="Left" Margin="30,375,0,0" Grid.Row="1" VerticalAlignment="Top"/>
+        <ComboBox x:Name="ViewTypeComboBox" HorizontalAlignment="Left" Margin="30,400,0,0" Grid.Row="1" VerticalAlignment="Top" Width="175" SelectedIndex="0">
+            <ComboBoxItem Content="Tracker Output"/>
+            <ComboBoxItem Content="Crazy Fly Calibration"/>
+            <ComboBoxItem Content="Target Calibration"/>
+        </ComboBox>
+
     </Grid>
 </Window>
