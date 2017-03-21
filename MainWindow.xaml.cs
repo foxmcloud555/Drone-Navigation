@@ -19,6 +19,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
     // Image processing libraries
     using Emgu.CV;
     using Emgu.CV.Structure;
+    using Emgu.CV.CvEnum;
 
     /// <summary>
     /// Interaction logic for MainWindow
@@ -215,14 +216,22 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     Image<Hsv, Byte> hsvImage = new Image<Hsv, byte>(bmp);
 
                     // filter HSV image using calibration values from the GUI
+                    // http://docs.opencv.org/master/da/d97/tutorial_threshold_inRange.html
+                    // http://www.emgu.com/wiki/files/2.0.0.0/html/07eff70b-f81f-6313-98a9-02d508f7c7e0.htm
                     //
                     // get the upper and lower threshholds
                     Hsv lower = new Hsv(THueMinSlider.Value, TSatMinSlider.Value, TValMinSlider.Value);
                     Hsv upper = new Hsv(THueMaxSlider.Value, TSatMaxSlider.Value, TValMaxSlider.Value);
-                    // store the resulting filtered image in threshold matrix
+                    // store the resulting filtered image into threshold matrix
                     Mat thresholdMat = hsvImage.InRange(lower, upper).Mat;
-                    
+
                     // eliminate noise to emphasize the filtered objects
+                    // through testing, 2 iterations is sufficient number of passes to get desired results whilst
+                    // no lower the framerate significantly, 4 saw significantly slower times. Bright lights from
+                    // windows also are unavoidable, so minimise that in the test environments. not an outdoor solution.
+                    const int iterations = 2; // the number of iterations in which want to erode and dilate the mat.
+                    CvInvoke.Erode(thresholdMat, thresholdMat, null, new System.Drawing.Point(-1, -1), iterations, BorderType.Constant, CvInvoke.MorphologyDefaultBorderValue);
+                    CvInvoke.Dilate(thresholdMat, thresholdMat, null, new System.Drawing.Point(-1, -1), iterations, BorderType.Constant, CvInvoke.MorphologyDefaultBorderValue);
 
                     // We can now pass this filtered result to the tracker
                     // we will only be able to get x,y data from this. but thats why we
