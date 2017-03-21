@@ -211,9 +211,13 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     Bitmap bmp = image.ToBitmap();
                     Image<Hsv, Byte> hsvImage = new Image<Hsv, byte>(bmp);
 
-                    // filter HSV imageand store filtered image to threshold matrix
-                    //              Mat threshold;
-                    //              CvInvoke.InRange(hsvImage, ,, threshold);
+                    // filter HSV image using calibration values from the GUI
+                    //
+                    // get the upper and lower threshholds
+                    Hsv lower = new Hsv(THueMinSlider.Value, TSatMinSlider.Value, TValMinSlider.Value);
+                    Hsv upper = new Hsv(THueMaxSlider.Value, TSatMaxSlider.Value, TValMaxSlider.Value);
+                    // store the resulting filtered image in threshold matrix
+                    Mat thresholdMat = hsvImage.InRange(lower, upper).Mat;
 
                     // eliminate noise to emphasize the filtered objects
 
@@ -222,7 +226,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     // kept in the depth buffer, we may be able to cross reference and
                     // extract the depth value to get our z coordinate.
 
-                    CvInvoke.Imshow("Output", hsvImage.Mat);
+                    CvInvoke.Imshow("Output", thresholdMat);
                 }
             }
         }

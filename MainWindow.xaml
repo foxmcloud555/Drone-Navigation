@@ -36,29 +36,29 @@
         <Label x:Name="CFHueMinLabel" Content="Hue Min:" HorizontalAlignment="Left" Margin="30,25,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         <Slider x:Name="CFHueMinSlider" HorizontalAlignment="Left" Margin="30,50,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
         <Label x:Name="CFHueMaxLabel" Content="Hue Max:" HorizontalAlignment="Left" Margin="30,75,0,0" Grid.Row="1" VerticalAlignment="Top"/>
-        <Slider x:Name="CFHueMaxSlider" HorizontalAlignment="Left" Margin="30,100,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Slider x:Name="CFHueMaxSlider" HorizontalAlignment="Left" Margin="30,100,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1" Value="256"/>
         <Label x:Name="CFSatMinLabel" Content="Saturation Min:" HorizontalAlignment="Left" Margin="30,125,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         <Slider x:Name="CFSatMinSlider" HorizontalAlignment="Left" Margin="30,150,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
         <Label x:Name="CFSatMaxLabel" Content="Saturation Max:" HorizontalAlignment="Left" Margin="30,175,0,0" Grid.Row="1" VerticalAlignment="Top"/>
-        <Slider x:Name="CFSatMaxSlider" HorizontalAlignment="Left" Margin="30,200,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Slider x:Name="CFSatMaxSlider" HorizontalAlignment="Left" Margin="30,200,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1" Value="256"/>
         <Label x:Name="CFValMinLabel" Content="Value Min:" HorizontalAlignment="Left" Margin="30,225,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         <Slider x:Name="CFValMinSlider" HorizontalAlignment="Left" Margin="30,250,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
         <Label x:Name="CFValMaxLabel" Content="Value Max:" HorizontalAlignment="Left" Margin="30,275,0,0" Grid.Row="1" VerticalAlignment="Top"/>
-        <Slider x:Name="CFValMaxSlider" HorizontalAlignment="Left" Margin="30,300,0,0" VerticalAlignment="Top" Width="250" Grid.Row="1" Maximum="256" SmallChange="1"/>
+        <Slider x:Name="CFValMaxSlider" HorizontalAlignment="Left" Margin="30,300,0,0" VerticalAlignment="Top" Width="250" Grid.Row="1" Maximum="256" SmallChange="1" Value="256"/>
 
         <Label x:Name="TTitle" Content="Target Tracker Filter" HorizontalAlignment="Left" Margin="400,0,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         <Label x:Name="THueMinLabel" Content="Hue Min:" HorizontalAlignment="Left" Margin="400,25,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         <Slider x:Name="THueMinSlider" HorizontalAlignment="Left" Margin="400,50,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
         <Label x:Name="THueMaxLabel" Content="Hue Max:" HorizontalAlignment="Left" Margin="400,75,0,0" Grid.Row="1" VerticalAlignment="Top"/>
-        <Slider x:Name="THueMaxSlider" HorizontalAlignment="Left" Margin="400,100,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Slider x:Name="THueMaxSlider" HorizontalAlignment="Left" Margin="400,100,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1" Value="256"/>
         <Label x:Name="TSatMinLabel" Content="Saturation Min:" HorizontalAlignment="Left" Margin="400,125,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         <Slider x:Name="TSatMinSlider" HorizontalAlignment="Left" Margin="400,150,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
         <Label x:Name="TSatMaxLabel" Content="Saturation Max:" HorizontalAlignment="Left" Margin="400,175,0,0" Grid.Row="1" VerticalAlignment="Top"/>
-        <Slider x:Name="TSatMaxSlider" HorizontalAlignment="Left" Margin="400,200,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
+        <Slider x:Name="TSatMaxSlider" HorizontalAlignment="Left" Margin="400,200,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1" Value="256"/>
         <Label x:Name="TValMinLabel" Content="Value Min:" HorizontalAlignment="Left" Margin="400,225,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         <Slider x:Name="TValMinSlider" HorizontalAlignment="Left" Margin="400,250,0,0" Grid.Row="1" VerticalAlignment="Top" Width="256" Maximum="256" SmallChange="1"/>
         <Label x:Name="TValMaxLabel" Content="Value Max:" HorizontalAlignment="Left" Margin="400,275,0,0" Grid.Row="1" VerticalAlignment="Top"/>
-        <Slider x:Name="TValMaxSlider" HorizontalAlignment="Left" Margin="400,300,0,0" VerticalAlignment="Top" Width="250" Grid.Row="1" Maximum="256" SmallChange="1"/>
+        <Slider x:Name="TValMaxSlider" HorizontalAlignment="Left" Margin="400,300,0,0" VerticalAlignment="Top" Width="250" Grid.Row="1" Maximum="256" SmallChange="1" Value="256"/>
 
         <Label x:Name="GuideLabel1" Content="Adjust the sliders to calibrate the crazyfly and target. Change the viewport output to only show the calibration data" HorizontalAlignment="Left" Margin="30,325,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         <Label x:Name="GuideLabel2" Content="for the item you are calibrating. Correct calibration is when the object is the only clearly visible object." HorizontalAlignment="Left" Margin="30,340,0,0" Grid.Row="1" VerticalAlignment="Top"/>
