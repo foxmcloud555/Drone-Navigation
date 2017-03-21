@@ -191,14 +191,17 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 {
                     int width = colorFrame.FrameDescription.Width;
                     int height = colorFrame.FrameDescription.Height;
-                    byte[] pixels = new byte[width * height * ((PixelFormats.Bgr32.BitsPerPixel + 7) / 8)];
-                    colorFrame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Rgba);
+                    PixelFormat format = PixelFormats.Bgr32;
 
-                    m_colourBitmap.WritePixels(
-                      new Int32Rect(0, 0, m_colourBitmap.PixelWidth, m_colourBitmap.PixelHeight),
-                      pixels,
-                      m_colourBitmap.PixelWidth * sizeof(int),
-                      0);
+                    byte[] pixels = new byte[width * height * ((format.BitsPerPixel + 7) / 8)];
+                    colorFrame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Bgra);
+
+                    // The code to load the unmodified image into bitmap
+                    //m_colourBitmap.WritePixels(
+                    //  new Int32Rect(0, 0, m_colourBitmap.PixelWidth, m_colourBitmap.PixelHeight),
+                    //  pixels,
+                    //  m_colourBitmap.PixelWidth * sizeof(int),
+                    //  0);
 
                     //Bitmap matrix
                     Image<Rgba, Byte> image = new Image<Rgba, Byte>(width, height); //specify the width and height here
@@ -208,7 +211,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     //            m_colourBitmap.CopyPixels(Int32Rect.Empty, bitmapMat.DataPointer, bitmapMat.Step * bitmapMat.Rows, bitmapMat.Step);
 
                     // convert frame from RGB to HSV colorspace
-                    Bitmap bmp = image.ToBitmap();
+                    Bitmap bmp = image.ToBitmap(width / 2, height / 2);
                     Image<Hsv, Byte> hsvImage = new Image<Hsv, byte>(bmp);
 
                     // filter HSV image using calibration values from the GUI
@@ -218,7 +221,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     Hsv upper = new Hsv(THueMaxSlider.Value, TSatMaxSlider.Value, TValMaxSlider.Value);
                     // store the resulting filtered image in threshold matrix
                     Mat thresholdMat = hsvImage.InRange(lower, upper).Mat;
-
+                    
                     // eliminate noise to emphasize the filtered objects
 
                     // We can now pass this filtered result to the tracker
