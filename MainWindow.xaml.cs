@@ -208,12 +208,10 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     //Bitmap matrix
                     Image<Rgba, Byte> image = new Image<Rgba, Byte>(width, height); //specify the width and height here
                     image.Bytes = pixels; //your byte array
-
-                    //            Mat bitmapMat = new Mat(m_colourBitmap.PixelHeight, m_colourBitmap.PixelWidth, Emgu.CV.CvEnum.DepthType.Cv32F, 4);
-                    //            m_colourBitmap.CopyPixels(Int32Rect.Empty, bitmapMat.DataPointer, bitmapMat.Step * bitmapMat.Rows, bitmapMat.Step);
-
+                    
                     // convert frame from RGB to HSV colorspace
                     Bitmap bmp = image.ToBitmap(width / 2, height / 2);
+                    Image<Rgba, Byte> rgbImage = new Image<Rgba, byte>(bmp);
                     Image<Hsv, Byte> hsvImage = new Image<Hsv, byte>(bmp);
 
                     // filter HSV image using calibration values from the GUI
@@ -234,54 +232,68 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     CvInvoke.Erode(thresholdMat, thresholdMat, null, new System.Drawing.Point(-1, -1), iterations, BorderType.Constant, CvInvoke.MorphologyDefaultBorderValue);
                     CvInvoke.Dilate(thresholdMat, thresholdMat, null, new System.Drawing.Point(-1, -1), iterations, BorderType.Constant, CvInvoke.MorphologyDefaultBorderValue);
 
-                    // We can now pass this filtered result to the tracker
-                    // we will only be able to get x,y data from this. but thats why we
-                    // kept in the depth buffer, we may be able to cross reference and
-                    // extract the depth value to get our z coordinate.
-
-                    //find contours of filtered image using openCV findContours function
-                    Mat hierarchy = new Mat();
-                    VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
-                    CvInvoke.FindContours(thresholdMat, contours, hierarchy, RetrType.Ccomp, ChainApproxMethod.ChainApproxSimple);
-                    
-                    //use moments method to find our filtered object
-                    // current largest area...
-                    double refArea = 0;
-                    // only output if object found...
-                    bool objectFound = false;
-                    // could store the index of the largest so only get the moment once, will
-                    // save time as long as we onyl want to track one obj. prefering the largest
-                    // to isolate from any remnant noise...
-                    // iterate all the contours to find the largest area one.
-                    for (int index = 0; index >= contours.Size; index++)
+                    // No need to process tracking during calibration...
+                    if (ViewTypeComboBox.SelectedIndex == 0)
                     {
+                        // We can now pass this filtered result to the tracker
+                        // we will only be able to get x,y data from this. but thats why we
+                        // kept in the depth buffer, we may be able to cross reference and
+                        // extract the depth value to get our z coordinate.
 
-                        // This is what we use to get the centroid and outline...
-                        Moments moment = moments((cv::Mat)contours[index]);
-                        // This is what we will use to work out if we have a valid object...
-                        double area = moment.m00;
-                        
-                        if (area > MIN_OBJECT_AREA && area < MAX_OBJECT_AREA && area > refArea)
+                        //find contours of filtered image using openCV findContours function
+                        Mat hierarchy = thresholdMat;
+                        VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
+                        CvInvoke.FindContours(hierarchy, contours, hierarchy, RetrType.Ccomp, ChainApproxMethod.ChainApproxSimple);
+
+                        //use moments method to find our filtered object
+                        // current largest area...
+                        double largestArea = 0;
+                        // only output if object found...
+                        bool objectFound = false;
+                        // coordinates of largest contour...
+                        int x = 0;
+                        int y = 0;
+                        // iterate all the contours to find the largest area one.
+                        for (int i = 0; i < contours.Size; i++)
                         {
-                            x = moment.m10 / area;
-                            y = moment.m01 / area;
-                            objectFound = true;
-                            refArea = area;
-                        }
-                        else objectFound = false;
-                    }
-                    // Display the tracking info on the screen.
-                    // also at this point we should probably notify the crazyfly of the positional data.
-                    // that is if we want a ping every frame. alternatively could hold the data and send
-                    // it upon request...
-                    if (objectFound == true)
-                    {
-                        // camera feed is the original image so we will have to change that...
-                        putText(cameraFeed, "Tracking Object", Point(0, 50), 2, 1, Scalar(0, 255, 0), 2);
-                        drawObject(x, y, cameraFeed);
-                    }
+                            // This is what we use to get the centroid and outline...
+                            MCvMoments moment = CvInvoke.Moments(contours[i]);
+                            // Find the area of contour
+                            // This is what we will use to work out if we have a valid object...
+                            double area = moment.M00;
+                            //                      double a = CvInvoke.ContourArea(contours[i], false);    // does this not do that?
 
-                    CvInvoke.Imshow("Output", thresholdMat);
+                            if (/*area > MIN_OBJECT_AREA && area < MAX_OBJECT_AREA &&*/ area > largestArea)
+                            {
+                                x = (int)(moment.M10 / area);
+                                y = (int)(moment.M01 / area);
+                                largestArea = area;
+                                objectFound = true;
+                            }
+                            else objectFound = false;
+                        }
+                        // Display the tracking info on the screen.
+                        // also at this point we should probably notify the crazyfly of the positional data.
+                        // that is if we want a ping every frame. alternatively could hold the data and send
+                        // it upon request...
+                        if (objectFound == true)
+                        {
+                            // camera feed is the original image so we will have to change that...
+                            CvInvoke.Circle(rgbImage, new System.Drawing.Point(x, y), 20, new MCvScalar(0, 0, 255), 2);
+                            CvInvoke.PutText(rgbImage, "Tracking Target", new System.Drawing.Point(x, y + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
+                            CvInvoke.PutText(rgbImage, x + "," + y, new System.Drawing.Point(x, y + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
+                        }
+
+                        CvInvoke.Imshow("Output", rgbImage);
+                    }
+                    else if (ViewTypeComboBox.SelectedIndex == 1)
+                    {
+                        CvInvoke.Imshow("Output", thresholdMat);
+                    }
+                    else
+                    {
+                        CvInvoke.Imshow("Output", thresholdMat);
+                    }
                 }
             }
         }
