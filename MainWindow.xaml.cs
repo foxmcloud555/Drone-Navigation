@@ -20,6 +20,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
     using Emgu.CV;
     using Emgu.CV.Structure;
     using Emgu.CV.CvEnum;
+    using Emgu.CV.Util;
 
     /// <summary>
     /// Interaction logic for MainWindow
@@ -237,6 +238,48 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     // we will only be able to get x,y data from this. but thats why we
                     // kept in the depth buffer, we may be able to cross reference and
                     // extract the depth value to get our z coordinate.
+
+                    //find contours of filtered image using openCV findContours function
+                    Mat hierarchy = new Mat();
+                    VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
+                    CvInvoke.FindContours(thresholdMat, contours, hierarchy, RetrType.Ccomp, ChainApproxMethod.ChainApproxSimple);
+                    
+                    //use moments method to find our filtered object
+                    // current largest area...
+                    double refArea = 0;
+                    // only output if object found...
+                    bool objectFound = false;
+                    // could store the index of the largest so only get the moment once, will
+                    // save time as long as we onyl want to track one obj. prefering the largest
+                    // to isolate from any remnant noise...
+                    // iterate all the contours to find the largest area one.
+                    for (int index = 0; index >= contours.Size; index++)
+                    {
+
+                        // This is what we use to get the centroid and outline...
+                        Moments moment = moments((cv::Mat)contours[index]);
+                        // This is what we will use to work out if we have a valid object...
+                        double area = moment.m00;
+                        
+                        if (area > MIN_OBJECT_AREA && area < MAX_OBJECT_AREA && area > refArea)
+                        {
+                            x = moment.m10 / area;
+                            y = moment.m01 / area;
+                            objectFound = true;
+                            refArea = area;
+                        }
+                        else objectFound = false;
+                    }
+                    // Display the tracking info on the screen.
+                    // also at this point we should probably notify the crazyfly of the positional data.
+                    // that is if we want a ping every frame. alternatively could hold the data and send
+                    // it upon request...
+                    if (objectFound == true)
+                    {
+                        // camera feed is the original image so we will have to change that...
+                        putText(cameraFeed, "Tracking Object", Point(0, 50), 2, 1, Scalar(0, 255, 0), 2);
+                        drawObject(x, y, cameraFeed);
+                    }
 
                     CvInvoke.Imshow("Output", thresholdMat);
                 }
