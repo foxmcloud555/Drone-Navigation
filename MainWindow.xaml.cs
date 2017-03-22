@@ -17,24 +17,23 @@ namespace Microsoft.Samples.Kinect.DepthBasics
     using System.Drawing;
     using Microsoft.Kinect;
     // Image processing libraries
+    /*
+        OpenCV is an image processing library that we can use with c++ to process the image data collected 
+        from the kinect. EMgu is a .NET wrapper that lets us use OpenCV funtions with our c# application.
+    */
     using Emgu.CV;
     using Emgu.CV.Structure;
     using Emgu.CV.CvEnum;
     using Emgu.CV.Util;
 
-    /// <summary>
-    /// Interaction logic for MainWindow
-    /// </summary>
+
+    // Interaction logic for MainWindow
     public partial class MainWindow : Window, INotifyPropertyChanged
     { 
-        /// <summary>
-        /// Active Kinect sensor
-        /// </summary>
+        // Active Kinect sensor
         private KinectSensor m_kinectSensor = null;
-
-        /// <summary>
-        /// Readers for sensor frames
-        /// </summary>
+        
+        // Readers for sensor frames
         private MultiSourceFrameReader m_FrameReader = null;
         /*
             Opted for multi source frame reader to allow us to process depth and colour at the
@@ -51,15 +50,11 @@ namespace Microsoft.Samples.Kinect.DepthBasics
 
         // Depth for when we need it
         private FrameDescription m_depthFrameDescription = null;
-
-        /// <summary>
-        /// Current status text to display
-        /// </summary>
+        
+        // Current status text to display
         private string m_statusText = null;
-
-        /// <summary>
-        /// Initialises a new instance of the MainWindow class.
-        /// </summary>
+        
+        // Initialises a new instance of the MainWindow class.
         public MainWindow()
         {
             // get the kinectSensor object and open the frame readers
@@ -67,25 +62,25 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             m_FrameReader = m_kinectSensor.OpenMultiSourceFrameReader(FrameSourceTypes.Color | FrameSourceTypes.Depth);
 
             // wire handler for frame arrival
-            m_FrameReader.MultiSourceFrameArrived += this.Reader_FrameArrived;
+            m_FrameReader.MultiSourceFrameArrived += Reader_FrameArrived;
 
             // set up the FrameDescriptions
-            m_depthFrameDescription = this.m_kinectSensor.DepthFrameSource.FrameDescription;
-            m_colourFrameDescription = this.m_kinectSensor.ColorFrameSource.FrameDescription;
+            m_depthFrameDescription = m_kinectSensor.DepthFrameSource.FrameDescription;
+            m_colourFrameDescription = m_kinectSensor.ColorFrameSource.FrameDescription;
 
             // create the bitmap
-            this.m_colourBitmap = new WriteableBitmap(this.m_colourFrameDescription.Width, this.m_colourFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgr32, null);
+            m_colourBitmap = new WriteableBitmap(m_colourFrameDescription.Width, m_colourFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgr32, null);
 
             // configer sensor
-            this.m_kinectSensor.IsAvailableChanged += this.Sensor_IsAvailableChanged;
-            this.m_kinectSensor.Open();
+            m_kinectSensor.IsAvailableChanged += Sensor_IsAvailableChanged;
+            m_kinectSensor.Open();
 
             // set the status text
-            this.StatusText = this.m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
-                                                            : Properties.Resources.NoSensorStatusText;
+            StatusText = m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
+                : Properties.Resources.NoSensorStatusText;
 
-            this.DataContext = this;
-            this.InitializeComponent();
+            DataContext = this;
+            InitializeComponent();
         }
 
         // INotifyPropertyChangedPropertyChanged event to allow window controls to bind to changeable data
@@ -94,18 +89,18 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         // Gets or sets the current status text to display
         public string StatusText
         {
-            get { return this.m_statusText; }
+            get { return m_statusText; }
 
             set
             {
-                if (this.m_statusText != value)
+                if (m_statusText != value)
                 {
-                    this.m_statusText = value;
+                    m_statusText = value;
 
                     // notify any bound elements that the text has changed
-                    if (this.PropertyChanged != null)
+                    if (PropertyChanged != null)
                     {
-                        this.PropertyChanged(this, new PropertyChangedEventArgs("StatusText"));
+                        PropertyChanged(this, new PropertyChangedEventArgs("StatusText"));
                     }
                 }
             }
@@ -119,10 +114,10 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 m_FrameReader.Dispose();
                 m_FrameReader = null;
             }
-            if (this.m_kinectSensor != null)
+            if (m_kinectSensor != null)
             {
-                this.m_kinectSensor.Close();
-                this.m_kinectSensor = null;
+                m_kinectSensor.Close();
+                m_kinectSensor = null;
             }
         }
 
@@ -177,6 +172,28 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 }
             }   // end of multi-source frame.
         }
+
+        /*
+            Tracking crazy fly using a colour ball marker relative to a colour marker target.
+            ( in our demo we will be using coloured ping pong balls )
+
+            Convert from RGB to Hue Saturation Value: ProcessColourFrame
+            - The converted colour range allow for easier filtering of different objects by colour.
+            - The saturated colour range makes our object markers pop out from the rest of the scen 
+              by using solid unique colour ranges.
+            
+            MinMax Threshold: FilterHsvImage
+            - Filter the colours of interest to show only the range that will show the objects we are tracking.
+            - Filter noise to isolate results from any remaining artefacts we dont want.
+            - The resulting image will be a single blob that is our object, the rest of the scene being 
+              filtered out, allowing us to pinpoint it exactly relative to the frame.
+
+            Tracking data from blobs: TrackObjectOnImage
+            - Retrieves x and y position, we can use this with the depth frame to retrieve the z value
+            - The resulting coordinates are emaningless outside of the context of the frame, but as we are interpreting
+              data withint he confines of the context of the frame, we can accuratly track the crazt fly relative to
+              the target object.
+        */
 
         // Process the provided colour frame and populate the given rgba and hsv images for us to use
         private void ProcessColourFrame(ColorFrame colorFrame, ref Image<Rgba, Byte> rgbaImage, ref Image<Hsv, Byte> hsvImage)
@@ -261,17 +278,13 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             }
             return objectFound;
         }
-
-        /// <summary>
-        /// Handles the event which the sensor becomes unavailable (E.g. paused, closed, unplugged).
-        /// </summary>
-        /// <param name="sender">object sending the event</param>
-        /// <param name="e">event arguments</param>
+        
+        // Handles the event which the sensor becomes unavailable (E.g. paused, closed, unplugged).
         private void Sensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
         {
             // on failure, set the status text
-            this.StatusText = this.m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
-                                                            : Properties.Resources.SensorNotAvailableStatusText;
+            StatusText = m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
+                : Properties.Resources.SensorNotAvailableStatusText;
         }
     }
 }
