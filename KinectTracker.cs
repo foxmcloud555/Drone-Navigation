@@ -12,6 +12,8 @@
     // Image processing libraries
     using Emgu.CV;
     using Emgu.CV.Structure;
+    using Emgu.CV.CvEnum;
+    using Emgu.CV.Util;
     /*
         OpenCV is an image processing library that we can use with c++ to process the image data collected 
         from the kinect. EMgu is a .NET wrapper that lets us use OpenCV funtions with our c# application.
@@ -34,17 +36,6 @@
             FilterNoise:
             - isolate results from any remaining artefacts we dont want.
         */
-
-        /// <summary>
-        /// Wrapper function to convert an image from RGB to Hue Saturation Value
-        /// </summary>
-        /// <param name="RGB_Bitmap">The RGB bitmap to convert</param>
-        /// <param name="HSV_Bitmap">The resulting HSV bitmap to populate</param>
-        public void Convert_RGB_HSV(WriteableBitmap RGB_Bitmap, WriteableBitmap HSV_Bitmap)
-        {
-            //Image<Gray, Byte> depthImage = new Image<Gray, Byte>([depthBitmap.PixelHeight, depthBitmap.pixelWidth, depthPixelData]);
-            //Image<Hsv, Byte> imgHSV = imgRGB.Convert<Hsv, Byte>();
-        }
         
     }
 }

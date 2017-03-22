@@ -191,94 +191,27 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             {
                 if (colorFrame != null)
                 {
-                    int width = colorFrame.FrameDescription.Width;
-                    int height = colorFrame.FrameDescription.Height;
-                    PixelFormat format = PixelFormats.Bgr32;
-
-                    byte[] pixels = new byte[width * height * ((format.BitsPerPixel + 7) / 8)];
-                    colorFrame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Bgra);
-
-                    // The code to load the unmodified image into bitmap
-                    //m_colourBitmap.WritePixels(
-                    //  new Int32Rect(0, 0, m_colourBitmap.PixelWidth, m_colourBitmap.PixelHeight),
-                    //  pixels,
-                    //  m_colourBitmap.PixelWidth * sizeof(int),
-                    //  0);
-
-                    //Bitmap matrix
-                    Image<Rgba, Byte> image = new Image<Rgba, Byte>(width, height); //specify the width and height here
-                    image.Bytes = pixels; //your byte array
+                    // Process the colour frame to get an rgba and hsv image for us to use
+                    Image<Rgba, Byte> rgbImage = null;
+                    Image<Hsv, Byte> hsvImage = null;
+                    ProcessColourFrame(colorFrame, ref rgbImage, ref hsvImage);
                     
-                    // convert frame from RGB to HSV colorspace
-                    Bitmap bmp = image.ToBitmap(width / 2, height / 2);
-                    Image<Rgba, Byte> rgbImage = new Image<Rgba, byte>(bmp);
-                    Image<Hsv, Byte> hsvImage = new Image<Hsv, byte>(bmp);
-
-                    // filter HSV image using calibration values from the GUI
-                    // http://docs.opencv.org/master/da/d97/tutorial_threshold_inRange.html
-                    // http://www.emgu.com/wiki/files/2.0.0.0/html/07eff70b-f81f-6313-98a9-02d508f7c7e0.htm
-                    //
-                    // get the upper and lower threshholds
-                    Hsv lower = new Hsv(THueMinSlider.Value, TSatMinSlider.Value, TValMinSlider.Value);
-                    Hsv upper = new Hsv(THueMaxSlider.Value, TSatMaxSlider.Value, TValMaxSlider.Value);
-                    // store the resulting filtered image into threshold matrix
-                    Mat thresholdMat = hsvImage.InRange(lower, upper).Mat;
-
-                    // eliminate noise to emphasize the filtered objects
-                    // through testing, 2 iterations is sufficient number of passes to get desired results whilst
-                    // no lower the framerate significantly, 4 saw significantly slower times. Bright lights from
-                    // windows also are unavoidable, so minimise that in the test environments. not an outdoor solution.
-                    const int iterations = 2; // the number of iterations in which want to erode and dilate the mat.
-                    CvInvoke.Erode(thresholdMat, thresholdMat, null, new System.Drawing.Point(-1, -1), iterations, BorderType.Constant, CvInvoke.MorphologyDefaultBorderValue);
-                    CvInvoke.Dilate(thresholdMat, thresholdMat, null, new System.Drawing.Point(-1, -1), iterations, BorderType.Constant, CvInvoke.MorphologyDefaultBorderValue);
+                    // Filter the image to the calibration values of the Target Object
+                    Mat thresholdMat = FilterHsvImage(hsvImage,
+                        new Hsv(THueMinSlider.Value, TSatMinSlider.Value, TValMinSlider.Value),
+                        new Hsv(THueMaxSlider.Value, TSatMaxSlider.Value, TValMaxSlider.Value));
 
                     // No need to process tracking during calibration...
                     if (ViewTypeComboBox.SelectedIndex == 0)
                     {
-                        // We can now pass this filtered result to the tracker
-                        // we will only be able to get x,y data from this. but thats why we
-                        // kept in the depth buffer, we may be able to cross reference and
-                        // extract the depth value to get our z coordinate.
-
-                        //find contours of filtered image using openCV findContours function
-                        Mat hierarchy = thresholdMat;
-                        VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
-                        CvInvoke.FindContours(hierarchy, contours, hierarchy, RetrType.Ccomp, ChainApproxMethod.ChainApproxSimple);
-
-                        //use moments method to find our filtered object
-                        // current largest area...
-                        double largestArea = 0;
-                        // only output if object found...
-                        bool objectFound = false;
-                        // coordinates of largest contour...
+                        // coordinates of largest contour
                         int x = 0;
                         int y = 0;
-                        // iterate all the contours to find the largest area one.
-                        for (int i = 0; i < contours.Size; i++)
-                        {
-                            // This is what we use to get the centroid and outline...
-                            MCvMoments moment = CvInvoke.Moments(contours[i]);
-                            // Find the area of contour
-                            // This is what we will use to work out if we have a valid object...
-                            double area = moment.M00;
-                            //                      double a = CvInvoke.ContourArea(contours[i], false);    // does this not do that?
-
-                            if (/*area > MIN_OBJECT_AREA && area < MAX_OBJECT_AREA &&*/ area > largestArea)
-                            {
-                                x = (int)(moment.M10 / area);
-                                y = (int)(moment.M01 / area);
-                                largestArea = area;
-                                objectFound = true;
-                            }
-                            else objectFound = false;
-                        }
-                        // Display the tracking info on the screen.
-                        // also at this point we should probably notify the crazyfly of the positional data.
-                        // that is if we want a ping every frame. alternatively could hold the data and send
-                        // it upon request...
+                        // Track the target object retrieving the x and y coordinates
+                        bool objectFound = TrackObjectOnImage(thresholdMat, ref x, ref y);
+                        // found something then output it...
                         if (objectFound == true)
                         {
-                            // camera feed is the original image so we will have to change that...
                             CvInvoke.Circle(rgbImage, new System.Drawing.Point(x, y), 20, new MCvScalar(0, 0, 255), 2);
                             CvInvoke.PutText(rgbImage, "Tracking Target", new System.Drawing.Point(x, y + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
                             CvInvoke.PutText(rgbImage, x + "," + y, new System.Drawing.Point(x, y + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
@@ -296,6 +229,90 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     }
                 }
             }
+        }
+
+        // Process the provided colour frame and populate the given rgba and hsv images for us to use
+        private void ProcessColourFrame(ColorFrame colorFrame, ref Image<Rgba, Byte> rgbaImage, ref Image<Hsv, Byte> hsvImage)
+        {
+            int width = colorFrame.FrameDescription.Width;
+            int height = colorFrame.FrameDescription.Height;
+            PixelFormat format = PixelFormats.Bgr32;
+
+            byte[] pixels = new byte[width * height * ((format.BitsPerPixel + 7) / 8)];
+            colorFrame.CopyConvertedFrameDataToArray(pixels, ColorImageFormat.Bgra);
+
+            // Create an image from the frame at its native scale
+            Image<Rgba, Byte> image = new Image<Rgba, Byte>(width, height);
+            image.Bytes = pixels;
+
+            // Rescale the frame by turning it to a bitmap
+            Bitmap bmp = image.ToBitmap(width / 2, height / 2);
+            
+            // "Save" the rescaled bitmap as a modifyable image
+            rgbaImage = new Image<Rgba, byte>(bmp);
+
+            // convert frame from RGB to HSV colorspace
+            hsvImage = new Image<Hsv, byte>(bmp);
+        }
+
+        // Filter the image to the calibration values returning a threshold mat
+        // Takes an image and lower / upper threshold values to filter by, returning the resulting threshold mat
+        private Mat FilterHsvImage(Image<Hsv, Byte> hsvImage, Hsv lower, Hsv upper )
+        {
+            // filter HSV image using calibration values from the GUI
+            // http://docs.opencv.org/master/da/d97/tutorial_threshold_inRange.html
+            // http://www.emgu.com/wiki/files/2.0.0.0/html/07eff70b-f81f-6313-98a9-02d508f7c7e0.htm
+            //
+            // using the upper and lower threshholds, store the resulting filtered image into threshold matrix
+            Mat thresholdMat = hsvImage.InRange(lower, upper).Mat;
+
+            // eliminate noise to emphasize the filtered objects
+            // through testing, 2 iterations is sufficient number of passes to get desired results whilst
+            // no lower the framerate significantly, 4 saw significantly slower times. Bright lights from
+            // windows also are unavoidable, so minimise that in the test environments. not an outdoor solution.
+            const int iterations = 2; // the number of iterations in which want to erode and dilate the mat.
+            CvInvoke.Erode(thresholdMat, thresholdMat, null, new System.Drawing.Point(-1, -1), iterations, BorderType.Constant, CvInvoke.MorphologyDefaultBorderValue);
+            CvInvoke.Dilate(thresholdMat, thresholdMat, null, new System.Drawing.Point(-1, -1), iterations, BorderType.Constant, CvInvoke.MorphologyDefaultBorderValue);
+
+            return thresholdMat;
+        }
+
+        // Track the object using a threshold matrix, retrieve the x and y coordinates, return if any objects have been found.
+        private bool TrackObjectOnImage(Mat threshold, ref int x, ref int y)
+        {
+            // we will only be able to get x,y data from this. but thats why we
+            // kept in the depth buffer, we may be able to cross reference and
+            // extract the depth value to get our z coordinate.
+
+            //find contours of filtered image using openCV findContours function
+            Mat hierarchy = threshold;
+            VectorOfVectorOfPoint contours = new VectorOfVectorOfPoint();
+            CvInvoke.FindContours(hierarchy, contours, hierarchy, RetrType.Ccomp, ChainApproxMethod.ChainApproxSimple);
+
+            //use moments method to find our filtered object
+            // current largest area...
+            double largestArea = 0;
+            // only output if object found...
+            bool objectFound = false;
+
+            // iterate all the contours to find the largest area one.
+            for (int i = 0; i < contours.Size; i++)
+            {
+                // This is what we use to get the centroid and outline...
+                MCvMoments moment = CvInvoke.Moments(contours[i]);
+                // Find the area of contour
+                // This is what we will use to work out if we have a valid object...
+                double area = moment.M00;
+                if (area > largestArea)
+                {
+                    x = (int)(moment.M10 / area);
+                    y = (int)(moment.M01 / area);
+                    largestArea = area;
+                    objectFound = true;
+                }
+                else objectFound = false;
+            }
+            return objectFound;
         }
 
         /// <summary>
