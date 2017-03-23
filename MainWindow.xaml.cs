@@ -8,9 +8,6 @@ namespace Microsoft.Samples.Kinect.DepthBasics
 {
     using System;
     using System.ComponentModel;
-    using System.Diagnostics;
-    using System.Globalization;
-    using System.IO;
     using System.Windows;
     using System.Windows.Media;
     using System.Windows.Media.Imaging;
@@ -21,20 +18,14 @@ namespace Microsoft.Samples.Kinect.DepthBasics
     using Emgu.CV.Structure;
     using Emgu.CV.CvEnum;
     using Emgu.CV.Util;
-
-    /// <summary>
-    /// Interaction logic for MainWindow
-    /// </summary>
+    
+    // Interaction logic for MainWindow
     public partial class MainWindow : Window, INotifyPropertyChanged
     { 
-        /// <summary>
-        /// Active Kinect sensor
-        /// </summary>
+        // Active Kinect sensor
         private KinectSensor m_kinectSensor = null;
-
-        /// <summary>
-        /// Readers for sensor frames
-        /// </summary>
+        
+        // Readers for sensor frames
         private DepthFrameReader m_depthFrameReader = null;
         private ColorFrameReader m_rgbFrameReader = null;
         /*
@@ -49,134 +40,79 @@ namespace Microsoft.Samples.Kinect.DepthBasics
 
         // Depth for when we need it
         private FrameDescription m_depthFrameDescription = null;
-
-        /// <summary>
-        /// Current status text to display
-        /// </summary>
+        
+        // Current status text to display
         private string m_statusText = null;
-
-        /// <summary>
-        /// Initialises a new instance of the MainWindow class.
-        /// </summary>
+        
+        // Initialises a new instance of the MainWindow class.
         public MainWindow()
         {
             // get the kinectSensor object and open the frame readers
-            this.m_kinectSensor = KinectSensor.GetDefault();
-            this.m_depthFrameReader = this.m_kinectSensor.DepthFrameSource.OpenReader();
-            this.m_rgbFrameReader = this.m_kinectSensor.ColorFrameSource.OpenReader();
+            m_kinectSensor = KinectSensor.GetDefault();
+            m_depthFrameReader = m_kinectSensor.DepthFrameSource.OpenReader();
+            m_rgbFrameReader = m_kinectSensor.ColorFrameSource.OpenReader();
 
             // wire handler for frame arrival
-            this.m_depthFrameReader.FrameArrived += this.Reader_DepthFrameArrived;
-            this.m_rgbFrameReader.FrameArrived += this.Reader_ColourFrameArrived;
+            m_rgbFrameReader.FrameArrived += Reader_ColourFrameArrived;
 
             // set up the FrameDescriptions
-            this.m_depthFrameDescription = this.m_kinectSensor.DepthFrameSource.FrameDescription;
-            this.m_colourFrameDescription = this.m_kinectSensor.ColorFrameSource.FrameDescription;
+            m_depthFrameDescription = m_kinectSensor.DepthFrameSource.FrameDescription;
+            m_colourFrameDescription = m_kinectSensor.ColorFrameSource.FrameDescription;
 
             // create the bitmap
-            this.m_colourBitmap = new WriteableBitmap(this.m_colourFrameDescription.Width, this.m_colourFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgr32, null);
+            m_colourBitmap = new WriteableBitmap(m_colourFrameDescription.Width, m_colourFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgr32, null);
 
             // configer sensor
-            this.m_kinectSensor.IsAvailableChanged += this.Sensor_IsAvailableChanged;
-            this.m_kinectSensor.Open();
+            m_kinectSensor.IsAvailableChanged += Sensor_IsAvailableChanged;
+            m_kinectSensor.Open();
 
             // set the status text
-            this.StatusText = this.m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
-                                                            : Properties.Resources.NoSensorStatusText;
+            StatusText = m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
+                : Properties.Resources.NoSensorStatusText;
 
-            this.DataContext = this;
-            this.InitializeComponent();
+            DataContext = this;
+            InitializeComponent();
         }
-
-        /// <summary>
-        /// INotifyPropertyChangedPropertyChanged event to allow window controls to bind to changeable data
-        /// </summary>
+        
+        // INotifyPropertyChangedPropertyChanged event to allow window controls to bind to changeable data
         public event PropertyChangedEventHandler PropertyChanged;
-
-        /// <summary>
-        /// Gets or sets the current status text to display
-        /// </summary>
+        
+        // Gets or sets the current status text to display
         public string StatusText
         {
-            get { return this.m_statusText; }
+            get { return m_statusText; }
 
             set
             {
-                if (this.m_statusText != value)
+                if (m_statusText != value)
                 {
-                    this.m_statusText = value;
+                    m_statusText = value;
 
                     // notify any bound elements that the text has changed
-                    if (this.PropertyChanged != null)
+                    if (PropertyChanged != null)
                     {
-                        this.PropertyChanged(this, new PropertyChangedEventArgs("StatusText"));
+                        PropertyChanged(this, new PropertyChangedEventArgs("StatusText"));
                     }
                 }
             }
         }
-
-        /// <summary>
-        /// Execute shutdown tasks
-        /// </summary>
-        /// <param name="sender">object sending the event</param>
-        /// <param name="e">event arguments</param>
+        
+        ///Execute shutdown tasks
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
-            if (this.m_depthFrameReader != null)
+            if (m_rgbFrameReader != null)
             {
-                this.m_depthFrameReader.Dispose();
-                this.m_depthFrameReader = null;
+                m_rgbFrameReader.Dispose();
+                m_rgbFrameReader = null;
             }
-            if (this.m_rgbFrameReader != null)
+            if (m_kinectSensor != null)
             {
-                this.m_rgbFrameReader.Dispose();
-                this.m_rgbFrameReader = null;
-            }
-            if (this.m_kinectSensor != null)
-            {
-                this.m_kinectSensor.Close();
-                this.m_kinectSensor = null;
+                m_kinectSensor.Close();
+                m_kinectSensor = null;
             }
         }
-
-        /// <summary>
-        /// Handles the depth frame data arriving from the sensor
-        /// </summary>
-        /// <param name="sender">object sending the event</param>
-        /// <param name="e">event arguments</param>
-        private void Reader_DepthFrameArrived(object sender, DepthFrameArrivedEventArgs e)
-        {
-            using (DepthFrame depthFrame = e.FrameReference.AcquireFrame())
-            {
-                if (depthFrame != null)
-                {
-                    // the fastest way to process the body index data is to directly access 
-                    // the underlying buffer
-                    using (Microsoft.Kinect.KinectBuffer depthBuffer = depthFrame.LockImageBuffer())
-                    {
-                        // verify data
-                        if (((this.m_depthFrameDescription.Width * this.m_depthFrameDescription.Height) == (depthBuffer.Size / this.m_depthFrameDescription.BytesPerPixel)) &&
-                            (this.m_depthFrameDescription.Width == this.m_colourBitmap.PixelWidth) && (this.m_depthFrameDescription.Height == this.m_colourBitmap.PixelHeight))
-                        {
-                            // Note: In order to see the full range of depth (including the less reliable far field depth)
-                            // we are setting maxDepth to the extreme potential depth threshold
-                            ushort maxDepth = ushort.MaxValue;
-
-                            // If you wish to filter by reliable depth distance, uncomment the following line:
-                            maxDepth = depthFrame.DepthMaxReliableDistance;
-
-                            // process depth...
-                        }
-                    }
-                }
-            }
-        }
-
-        /// <summary>
-        /// Handles the colour frame data arriving from the sensor
-        /// </summary>
-        /// <param name="sender">object sending the event</param>
-        /// <param name="e">event arguments</param>
+        
+        // Handles the colour frame data arriving from the sensor
         private void Reader_ColourFrameArrived(object sender, ColorFrameArrivedEventArgs e)
         {
             using (ColorFrame colorFrame = e.FrameReference.AcquireFrame())
@@ -326,17 +262,13 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             }
             return objectFound;
         }
-
-        /// <summary>
-        /// Handles the event which the sensor becomes unavailable (E.g. paused, closed, unplugged).
-        /// </summary>
-        /// <param name="sender">object sending the event</param>
-        /// <param name="e">event arguments</param>
+        
+        // Handles the event which the sensor becomes unavailable (E.g. paused, closed, unplugged).
         private void Sensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
         {
             // on failure, set the status text
-            this.StatusText = this.m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
-                                                            : Properties.Resources.SensorNotAvailableStatusText;
+            StatusText = m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
+                : Properties.Resources.SensorNotAvailableStatusText;
         }
     }
 }
