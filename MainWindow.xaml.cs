@@ -94,14 +94,6 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         public event PropertyChangedEventHandler PropertyChanged;
 
         /// <summary>
-        /// Gets the bitmap to display
-        /// </summary>
- //       public ImageSource ImageSource
-//        {
- //           get { return this.m_colourBitmap; }
- //       }
-
-        /// <summary>
         /// Gets or sets the current status text to display
         /// </summary>
         public string StatusText
