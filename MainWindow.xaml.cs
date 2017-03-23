@@ -148,15 +148,18 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                             // coordinates of largest contour
                             int x = 0;
                             int y = 0;
+                            int z = 0;
                             // Track the target object retrieving the x and y coordinates
                             bool objectFound = TrackObjectOnImage(thresholdMat, ref x, ref y);
                             // found something then output it...
                             if (objectFound == true)
                             {
-                                CvInvoke.Circle(rgbImage, new System.Drawing.Point(x, y), 20, new MCvScalar(0, 0, 255), 2);
-                                CvInvoke.PutText(rgbImage, "Tracking Target", new System.Drawing.Point(x, y + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
-                                CvInvoke.PutText(rgbImage, x + "," + y, new System.Drawing.Point(x, y + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
+
                             }
+                            CvInvoke.Circle(rgbImage, new System.Drawing.Point(x, y), 20, new MCvScalar(0, 0, 255), 2);
+                            CvInvoke.PutText(rgbImage, "Tracking Target", new System.Drawing.Point(x, y + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
+                            CvInvoke.PutText(rgbImage, x + "," + y + "," + z, new System.Drawing.Point(x, y + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
+                            
 
                             CvInvoke.Imshow("Output", rgbImage);
                         }
@@ -278,7 +281,51 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             }
             return objectFound;
         }
-        
+
+        // Use the Depth frame to aquire z value from 2 frame coordinates (colour frame scale)
+        private unsafe int FindFrameZ(MultiSourceFrame multiSourceFrame, ref int x, ref int y)
+        {
+            // https://gist.github.com/taylor224/1a534cb9287a4205c91f
+            // Primarily code referenced from, DepthBasics-WPF demo from the sdk.
+            // Check out that demo to better see how the depth frame is handled.
+
+            using (DepthFrame depthFrame = multiSourceFrame.DepthFrameReference.AcquireFrame())
+            {
+                if (depthFrame != null)
+                {
+                    // the fastest way to process the body index data is to directly access the underlying buffer
+                    using (Microsoft.Kinect.KinectBuffer depthBuffer = depthFrame.LockImageBuffer())
+                    {
+                        // Note: In order to see the full range of depth (including the less reliable far field depth)
+                        // we are setting maxDepth to the extreme potential depth threshold
+                        ushort maxDepth = depthFrame.DepthMaxReliableDistance;
+
+                        m_depthFrameDescription = depthFrame.FrameDescription;
+                        int depthWidth = m_depthFrameDescription.Width;
+                        int depthHeight = m_depthFrameDescription.Height;
+
+                        CoordinateMapper coordinateMapper = m_kinectSensor.CoordinateMapper;
+                        int imgSize = depthWidth * depthHeight;
+
+                        // depth frame data is a 16 bit value
+                        //private ushort[] depthFrameData = null;
+                        //depthFrameData = new ushort[depthWidth * depthHeight];
+                        //private byte[] depthPixels = null;
+                        //this.depthPixels = new byte[depthWidth * depthHeight * BytesPerPixel];
+
+                        // Copy the pixel data from the image to a temporary array
+                        //depthFrame.CopyFrameDataToArray();
+
+                        // Get the z value from our x and y values
+                        CameraSpacePoint[] csp = new CameraSpacePoint[1920 * 1080];
+                        //coordinateMapper.MapColorFrameToCameraSpace(frameData, csp);
+                        return (int)csp[(1920 * Convert.ToInt16(y)) + Convert.ToInt16(x)].Z;
+                    }
+                }
+            }
+            return 0;   // fail.
+        }
+
         // Handles the event which the sensor becomes unavailable (E.g. paused, closed, unplugged).
         private void Sensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
         {
