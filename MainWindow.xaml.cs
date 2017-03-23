@@ -197,35 +197,55 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     ProcessColourFrame(colorFrame, ref rgbImage, ref hsvImage);
                     
                     // Filter the image to the calibration values of the Target Object
-                    Mat thresholdMat = FilterHsvImage(hsvImage,
+                    Mat targetThresholdMat = FilterHsvImage(hsvImage,
                         new Hsv(THueMinSlider.Value, TSatMinSlider.Value, TValMinSlider.Value),
                         new Hsv(THueMaxSlider.Value, TSatMaxSlider.Value, TValMaxSlider.Value));
+
+                    // Filter the image to the calibration values of the Target Object
+                    Mat crazyFlyThresholdMat = FilterHsvImage(hsvImage,
+                        new Hsv(CFHueMinSlider.Value, CFSatMinSlider.Value, CFValMinSlider.Value),
+                        new Hsv(CFHueMaxSlider.Value, CFSatMaxSlider.Value, CFValMaxSlider.Value));
 
                     // No need to process tracking during calibration...
                     if (ViewTypeComboBox.SelectedIndex == 0)
                     {
+                        // Track the target object
                         // coordinates of largest contour
-                        int x = 0;
-                        int y = 0;
+                        int tx = 0;
+                        int ty = 0;
                         // Track the target object retrieving the x and y coordinates
-                        bool objectFound = TrackObjectOnImage(thresholdMat, ref x, ref y);
+                        bool tObjectFound = TrackObjectOnImage(targetThresholdMat, ref tx, ref ty);
                         // found something then output it...
-                        if (objectFound == true)
+                        if (tObjectFound == true)
                         {
-                            CvInvoke.Circle(rgbImage, new System.Drawing.Point(x, y), 20, new MCvScalar(0, 0, 255), 2);
-                            CvInvoke.PutText(rgbImage, "Tracking Target", new System.Drawing.Point(x, y + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
-                            CvInvoke.PutText(rgbImage, x + "," + y, new System.Drawing.Point(x, y + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
+                            CvInvoke.Circle(rgbImage, new System.Drawing.Point(tx, ty), 20, new MCvScalar(0, 0, 255), 2);
+                            CvInvoke.PutText(rgbImage, "Tracking Target", new System.Drawing.Point(tx, ty + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
+                            CvInvoke.PutText(rgbImage, tx + "," + ty, new System.Drawing.Point(tx, ty + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
                         }
 
+                        // Track the crazyfly object
+                        int cfx = 0;
+                        int cfy = 0;
+                        bool cgObjectFound = TrackObjectOnImage(crazyFlyThresholdMat, ref cfx, ref cfy);
+                        if (cgObjectFound == true)
+                        {
+                            CvInvoke.Circle(rgbImage, new System.Drawing.Point(cfx, cfy), 20, new MCvScalar(0, 255, 0), 2);
+                            CvInvoke.PutText(rgbImage, "Tracking Crazyfly", new System.Drawing.Point(cfx, cfy + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 255, 0), 2);
+                            CvInvoke.PutText(rgbImage, cfx + "," + cfy, new System.Drawing.Point(cfx, cfy + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 255, 0), 2);
+                        }
+
+                        // output results
                         CvInvoke.Imshow("Output", rgbImage);
+
+                        // CRAZYFLY COMMUNICATION HERE - at this point we will lose track of local scope, alt we could store it...
                     }
                     else if (ViewTypeComboBox.SelectedIndex == 1)
                     {
-                        CvInvoke.Imshow("Output", thresholdMat);
+                        CvInvoke.Imshow("Output", crazyFlyThresholdMat);
                     }
                     else
                     {
-                        CvInvoke.Imshow("Output", thresholdMat);
+                        CvInvoke.Imshow("Output", targetThresholdMat);
                     }
                 }
             }

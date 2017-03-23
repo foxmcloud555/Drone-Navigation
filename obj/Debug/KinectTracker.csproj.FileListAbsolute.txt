@@ -31,3 +31,19 @@ C:\Users\Lloyd\Desktop\Prog Things\Programming Things Group Assignment\obj\Debug
 C:\Users\Lloyd\Desktop\Prog Things\Programming Things Group Assignment\obj\Debug\DepthBasics-WPF.g.resources
 C:\Users\Lloyd\Desktop\Prog Things\Programming Things Group Assignment\obj\Debug\Microsoft.Samples.Kinect.DepthBasics.Properties.Resources.resources
 C:\Users\Lloyd\Desktop\Prog Things\Programming Things Group Assignment\obj\Debug\KinectTracker.csproj.GenerateResource.Cache
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\bin\AnyCPU\Debug\DepthBasics-WPF.exe.config
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\bin\AnyCPU\Debug\DepthBasics-WPF.exe
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\bin\AnyCPU\Debug\DepthBasics-WPF.pdb
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\bin\AnyCPU\Debug\Microsoft.Kinect.dll
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\bin\AnyCPU\Debug\Emgu.CV.World.xml
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\bin\AnyCPU\Debug\Microsoft.Kinect.xml
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\KinectTracker.csprojResolveAssemblyReference.cache
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\MainWindow.baml
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\MainWindow.g.cs
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\App.g.cs
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\DepthBasics-WPF_MarkupCompile.cache
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\DepthBasics-WPF.g.resources
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\Microsoft.Samples.Kinect.DepthBasics.Properties.Resources.resources
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\KinectTracker.csproj.GenerateResource.Cache
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\DepthBasics-WPF.exe
+C:\Users\Gerty Jr\Desktop\Kinect Project\KINECT PROJ\obj\Debug\DepthBasics-WPF.pdb
