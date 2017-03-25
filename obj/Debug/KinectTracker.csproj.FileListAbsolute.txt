@@ -31,3 +31,6 @@ C:\Users\Lloyd\Desktop\Prog Things\Programming Things Group Assignment\obj\Debug
 C:\Users\Lloyd\Desktop\Prog Things\Programming Things Group Assignment\obj\Debug\DepthBasics-WPF.g.resources
 C:\Users\Lloyd\Desktop\Prog Things\Programming Things Group Assignment\obj\Debug\Microsoft.Samples.Kinect.DepthBasics.Properties.Resources.resources
 C:\Users\Lloyd\Desktop\Prog Things\Programming Things Group Assignment\obj\Debug\KinectTracker.csproj.GenerateResource.Cache
+C:\Users\Katie\Desktop\KinectProject\bin\AnyCPU\Debug\DepthBasics-WPF.exe.config
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\DepthBasics-WPF.exe
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\DepthBasics-WPF.pdb

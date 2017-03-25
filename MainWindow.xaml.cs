@@ -16,32 +16,35 @@ namespace Microsoft.Samples.Kinect.DepthBasics
     using System.Windows.Media.Imaging;
     using System.Drawing;
     using Microsoft.Kinect;
+    using System.IO.Pipes;
+    using System.Text;
+
+    using ZeroMQ;
     // Image processing libraries
-    /*
-        OpenCV is an image processing library that we can use with c++ to process the image data collected 
-        from the kinect. EMgu is a .NET wrapper that lets us use OpenCV funtions with our c# application.
-    */
     using Emgu.CV;
     using Emgu.CV.Structure;
     using Emgu.CV.CvEnum;
     using Emgu.CV.Util;
 
-
-    // Interaction logic for MainWindow
+    /// <summary>
+    /// Interaction logic for MainWindow
+    /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
     { 
-        // Active Kinect sensor
+        /// <summary>
+        /// Active Kinect sensor
+        /// </summary>
         private KinectSensor m_kinectSensor = null;
-        
-        // Readers for sensor frames
-        private MultiSourceFrameReader m_FrameReader = null;
-        /*
-            Opted for multi source frame reader to allow us to process depth and colour at the
-            same time rather than seperatly as it simplifies the issue greatly.
 
-            Originally we were going to go with infrared over colour due to it not being affected 
-            by light in the same way as colour is, however the object colour is what we are 
-            filtering by to track the objects as it is the more intuitive solution for our needs.
+        /// <summary>
+        /// Readers for sensor frames
+        /// </summary>
+        private DepthFrameReader m_depthFrameReader = null;
+        private ColorFrameReader m_rgbFrameReader = null;
+        /*
+            Originally we were going to go with infrared due to it not being affected by light 
+            in the same way as colour is, however the object colour is what we are filtering 
+            by to track the objects as it is the more intuitive solution.
         */
         
         // Colour bitmap to be recieved by the kinect
@@ -50,153 +53,217 @@ namespace Microsoft.Samples.Kinect.DepthBasics
 
         // Depth for when we need it
         private FrameDescription m_depthFrameDescription = null;
-        
-        // Current status text to display
+
+        // The named pipe to communicate with the crazyflie
+        private NamedPipeServerStream kinectCrazyFliePipe = new NamedPipeServerStream("CrazyPipe");
+        private BinaryWriter kinectCrazyFlieWriter = null;
+
+        /// <summary>
+        /// Current status text to display
+        /// </summary>
         private string m_statusText = null;
+
         
-        // Initialises a new instance of the MainWindow class.
+
+        /// <summary>
+        /// Initialises a new instance of the MainWindow class.
+        /// </summary>
         public MainWindow()
         {
             // get the kinectSensor object and open the frame readers
-            m_kinectSensor = KinectSensor.GetDefault();
-            m_FrameReader = m_kinectSensor.OpenMultiSourceFrameReader(FrameSourceTypes.Color | FrameSourceTypes.Depth);
+            this.m_kinectSensor = KinectSensor.GetDefault();
+            this.m_depthFrameReader = this.m_kinectSensor.DepthFrameSource.OpenReader();
+            this.m_rgbFrameReader = this.m_kinectSensor.ColorFrameSource.OpenReader();
 
             // wire handler for frame arrival
-            m_FrameReader.MultiSourceFrameArrived += Reader_FrameArrived;
+            this.m_depthFrameReader.FrameArrived += this.Reader_DepthFrameArrived;
+            this.m_rgbFrameReader.FrameArrived += this.Reader_ColourFrameArrived;
 
             // set up the FrameDescriptions
-            m_depthFrameDescription = m_kinectSensor.DepthFrameSource.FrameDescription;
-            m_colourFrameDescription = m_kinectSensor.ColorFrameSource.FrameDescription;
+            this.m_depthFrameDescription = this.m_kinectSensor.DepthFrameSource.FrameDescription;
+            this.m_colourFrameDescription = this.m_kinectSensor.ColorFrameSource.FrameDescription;
 
             // create the bitmap
-            m_colourBitmap = new WriteableBitmap(m_colourFrameDescription.Width, m_colourFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgr32, null);
+            this.m_colourBitmap = new WriteableBitmap(this.m_colourFrameDescription.Width, this.m_colourFrameDescription.Height, 96.0, 96.0, PixelFormats.Bgr32, null);
 
             // configer sensor
-            m_kinectSensor.IsAvailableChanged += Sensor_IsAvailableChanged;
-            m_kinectSensor.Open();
+            this.m_kinectSensor.IsAvailableChanged += this.Sensor_IsAvailableChanged;
+            this.m_kinectSensor.Open();
 
             // set the status text
-            StatusText = m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
-                : Properties.Resources.NoSensorStatusText;
+            this.StatusText = this.m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
+                                                            : Properties.Resources.NoSensorStatusText;
+            
 
-            DataContext = this;
-            InitializeComponent();
+            this.DataContext = this;
+            this.InitializeComponent();
+
+            // Wait for a connection from the python script
+            Debug.Content = "Waiting For Connection";
+            kinectCrazyFliePipe.WaitForConnection();
+
+            // Connection established; open the pipeline to write
+            Debug.Content = "Connected";
+            kinectCrazyFlieWriter = new BinaryWriter(kinectCrazyFliePipe);
         }
-
-        // INotifyPropertyChangedPropertyChanged event to allow window controls to bind to changeable data
+    
+        /// <summary>
+        /// INotifyPropertyChangedPropertyChanged event to allow window controls to bind to changeable data
+        /// </summary>
         public event PropertyChangedEventHandler PropertyChanged;
-        
-        // Gets or sets the current status text to display
+
+        /// <summary>
+        /// Gets or sets the current status text to display
+        /// </summary>
         public string StatusText
         {
-            get { return m_statusText; }
+            get { return this.m_statusText; }
 
             set
             {
-                if (m_statusText != value)
+                if (this.m_statusText != value)
                 {
-                    m_statusText = value;
+                    this.m_statusText = value;
 
                     // notify any bound elements that the text has changed
-                    if (PropertyChanged != null)
+                    if (this.PropertyChanged != null)
                     {
-                        PropertyChanged(this, new PropertyChangedEventArgs("StatusText"));
+                        this.PropertyChanged(this, new PropertyChangedEventArgs("StatusText"));
                     }
                 }
             }
         }
-        
-        // Execute shutdown tasks
+
+        /// <summary>
+        /// Execute shutdown tasks
+        /// </summary>
+        /// <param name="sender">object sending the event</param>
+        /// <param name="e">event arguments</param>
         private void MainWindow_Closing(object sender, CancelEventArgs e)
         {
-            if (m_FrameReader != null)
+            if (this.m_depthFrameReader != null)
             {
-                m_FrameReader.Dispose();
-                m_FrameReader = null;
+                this.m_depthFrameReader.Dispose();
+                this.m_depthFrameReader = null;
             }
-            if (m_kinectSensor != null)
+            if (this.m_rgbFrameReader != null)
             {
-                m_kinectSensor.Close();
-                m_kinectSensor = null;
+                this.m_rgbFrameReader.Dispose();
+                this.m_rgbFrameReader = null;
+            }
+            if (this.m_kinectSensor != null)
+            {
+                this.m_kinectSensor.Close();
+                this.m_kinectSensor = null;
             }
         }
 
-        // Handles the colour frame data arriving from the sensor
-        private void Reader_FrameArrived(object sender, MultiSourceFrameArrivedEventArgs e)
+        /// <summary>
+        /// Handles the depth frame data arriving from the sensor
+        /// </summary>
+        /// <param name="sender">object sending the event</param>
+        /// <param name="e">event arguments</param>
+        private void Reader_DepthFrameArrived(object sender, DepthFrameArrivedEventArgs e)
         {
-            // cannot use using with multisource frame
-            MultiSourceFrame multiSourceFrame = e.FrameReference.AcquireFrame();
-            if (multiSourceFrame != null)
+            using (DepthFrame depthFrame = e.FrameReference.AcquireFrame())
             {
-                using (ColorFrame colorFrame = multiSourceFrame.ColorFrameReference.AcquireFrame())
+                if (depthFrame != null)
                 {
-                    if (colorFrame != null)
+                    // the fastest way to process the body index data is to directly access 
+                    // the underlying buffer
+                    using (Microsoft.Kinect.KinectBuffer depthBuffer = depthFrame.LockImageBuffer())
                     {
-                        // Process the colour frame to get an rgba and hsv image for us to use
-                        Image<Rgba, Byte> rgbImage = null;
-                        Image<Hsv, Byte> hsvImage = null;
-                        ProcessColourFrame(colorFrame, ref rgbImage, ref hsvImage);
-
-                        // Filter the image to the calibration values of the Target Object
-                        Mat thresholdMat = FilterHsvImage(hsvImage,
-                            new Hsv(THueMinSlider.Value, TSatMinSlider.Value, TValMinSlider.Value),
-                            new Hsv(THueMaxSlider.Value, TSatMaxSlider.Value, TValMaxSlider.Value));
-
-                        // No need to process tracking during calibration...
-                        if (ViewTypeComboBox.SelectedIndex == 0)
+                        // verify data
+                        if (((this.m_depthFrameDescription.Width * this.m_depthFrameDescription.Height) == (depthBuffer.Size / this.m_depthFrameDescription.BytesPerPixel)) &&
+                            (this.m_depthFrameDescription.Width == this.m_colourBitmap.PixelWidth) && (this.m_depthFrameDescription.Height == this.m_colourBitmap.PixelHeight))
                         {
-                            // coordinates of largest contour
-                            int x = 0;
-                            int y = 0;
-                            int z = 0;
-                            // Track the target object retrieving the x and y coordinates
-                            bool objectFound = TrackObjectOnImage(thresholdMat, ref x, ref y);
-                            // found something then output it...
-                            if (objectFound == true)
-                            {
+                            // Note: In order to see the full range of depth (including the less reliable far field depth)
+                            // we are setting maxDepth to the extreme potential depth threshold
+                            ushort maxDepth = ushort.MaxValue;
 
-                            }
-                            CvInvoke.Circle(rgbImage, new System.Drawing.Point(x, y), 20, new MCvScalar(0, 0, 255), 2);
-                            CvInvoke.PutText(rgbImage, "Tracking Target", new System.Drawing.Point(x, y + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
-                            CvInvoke.PutText(rgbImage, x + "," + y + "," + z, new System.Drawing.Point(x, y + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
-                            
+                            // If you wish to filter by reliable depth distance, uncomment the following line:
+                            maxDepth = depthFrame.DepthMaxReliableDistance;
 
-                            CvInvoke.Imshow("Output", rgbImage);
-                        }
-                        else if (ViewTypeComboBox.SelectedIndex == 1)
-                        {
-                            CvInvoke.Imshow("Output", thresholdMat);
-                        }
-                        else
-                        {
-                            CvInvoke.Imshow("Output", thresholdMat);
+                            // process depth...
                         }
                     }
                 }
-            }   // end of multi-source frame.
+            }
         }
 
-        /*
-            Tracking crazy fly using a colour ball marker relative to a colour marker target.
-            ( in our demo we will be using coloured ping pong balls )
+        /// <summary>
+        /// Handles the colour frame data arriving from the sensor
+        /// </summary>
+        /// <param name="sender">object sending the event</param>
+        /// <param name="e">event arguments</param>
+        private void Reader_ColourFrameArrived(object sender, ColorFrameArrivedEventArgs e)
+        {
+            using (ColorFrame colorFrame = e.FrameReference.AcquireFrame())
+            {
+                if (colorFrame != null)
+                {
+                    // Process the colour frame to get an rgba and hsv image for us to use
+                    Image<Rgba, Byte> rgbImage = null;
+                    Image<Hsv, Byte> hsvImage = null;
+                    ProcessColourFrame(colorFrame, ref rgbImage, ref hsvImage);
+                    
+                    // Filter the image to the calibration values of the Target Object
+                    Mat targetThresholdMat = FilterHsvImage(hsvImage,
+                        new Hsv(THueMinSlider.Value, TSatMinSlider.Value, TValMinSlider.Value),
+                        new Hsv(THueMaxSlider.Value, TSatMaxSlider.Value, TValMaxSlider.Value));
 
-            Convert from RGB to Hue Saturation Value: ProcessColourFrame
-            - The converted colour range allow for easier filtering of different objects by colour.
-            - The saturated colour range makes our object markers pop out from the rest of the scen 
-              by using solid unique colour ranges.
-            
-            MinMax Threshold: FilterHsvImage
-            - Filter the colours of interest to show only the range that will show the objects we are tracking.
-            - Filter noise to isolate results from any remaining artefacts we dont want.
-            - The resulting image will be a single blob that is our object, the rest of the scene being 
-              filtered out, allowing us to pinpoint it exactly relative to the frame.
+                    // Filter the image to the calibration values of the Target Object
+                    Mat crazyFlyThresholdMat = FilterHsvImage(hsvImage,
+                        new Hsv(CFHueMinSlider.Value, CFSatMinSlider.Value, CFValMinSlider.Value),
+                        new Hsv(CFHueMaxSlider.Value, CFSatMaxSlider.Value, CFValMaxSlider.Value));
 
-            Tracking data from blobs: TrackObjectOnImage
-            - Retrieves x and y position, we can use this with the depth frame to retrieve the z value
-            - The resulting coordinates are emaningless outside of the context of the frame, but as we are interpreting
-              data withint he confines of the context of the frame, we can accuratly track the crazt fly relative to
-              the target object.
-        */
+                    // No need to process tracking during calibration...
+                    if (ViewTypeComboBox.SelectedIndex == 0)
+                    {
+                        // Track the target object
+                        // coordinates of largest contour
+                        int tx = 0;
+                        int ty = 0;
+                        // Track the target object retrieving the x and y coordinates
+                        bool tObjectFound = TrackObjectOnImage(targetThresholdMat, ref tx, ref ty);
+                        // found something then output it...
+                        if (tObjectFound == true)
+                        {
+                            CvInvoke.Circle(rgbImage, new System.Drawing.Point(tx, ty), 20, new MCvScalar(0, 0, 255), 2);
+                            CvInvoke.PutText(rgbImage, "Tracking Target", new System.Drawing.Point(tx, ty + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
+                            CvInvoke.PutText(rgbImage, tx + "," + ty, new System.Drawing.Point(tx, ty + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 0, 255), 2);
+                        }
+
+                        // Track the crazyfly object
+                        int cfx = 0;
+                        int cfy = 0;
+                        bool cgObjectFound = TrackObjectOnImage(crazyFlyThresholdMat, ref cfx, ref cfy);
+                        if (cgObjectFound == true)
+                        {
+                            CvInvoke.Circle(rgbImage, new System.Drawing.Point(cfx, cfy), 20, new MCvScalar(0, 255, 0), 2);
+                            CvInvoke.PutText(rgbImage, "Tracking Crazyfly", new System.Drawing.Point(cfx, cfy + 40), FontFace.HersheySimplex, 1, new MCvScalar(0, 255, 0), 2);
+                            CvInvoke.PutText(rgbImage, cfx + "," + cfy, new System.Drawing.Point(cfx, cfy + 30), FontFace.HersheySimplex, 1, new MCvScalar(0, 255, 0), 2);
+                        }
+
+                        // output results
+                        CvInvoke.Imshow("Output", rgbImage);
+
+                        // CRAZYFLY COMMUNICATION HERE - at this point we will lose track of local scope, alt we could store it...
+                        string value = cfx.ToString();
+                        SendCommandToCrazyFlie(value);
+
+                    }
+                    else if (ViewTypeComboBox.SelectedIndex == 1)
+                    {
+                        CvInvoke.Imshow("Output", crazyFlyThresholdMat);
+                    }
+                    else
+                    {
+                        CvInvoke.Imshow("Output", targetThresholdMat);
+                    }
+                }
+            }
+        }
 
         // Process the provided colour frame and populate the given rgba and hsv images for us to use
         private void ProcessColourFrame(ColorFrame colorFrame, ref Image<Rgba, Byte> rgbaImage, ref Image<Hsv, Byte> hsvImage)
@@ -282,56 +349,25 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             return objectFound;
         }
 
-        // Use the Depth frame to aquire z value from 2 frame coordinates (colour frame scale)
-        private unsafe int FindFrameZ(MultiSourceFrame multiSourceFrame, ref int x, ref int y)
-        {
-            // https://gist.github.com/taylor224/1a534cb9287a4205c91f
-            // Primarily code referenced from, DepthBasics-WPF demo from the sdk.
-            // Check out that demo to better see how the depth frame is handled.
-
-            using (DepthFrame depthFrame = multiSourceFrame.DepthFrameReference.AcquireFrame())
-            {
-                if (depthFrame != null)
-                {
-                    // the fastest way to process the body index data is to directly access the underlying buffer
-                    using (Microsoft.Kinect.KinectBuffer depthBuffer = depthFrame.LockImageBuffer())
-                    {
-                        // Note: In order to see the full range of depth (including the less reliable far field depth)
-                        // we are setting maxDepth to the extreme potential depth threshold
-                        ushort maxDepth = depthFrame.DepthMaxReliableDistance;
-
-                        m_depthFrameDescription = depthFrame.FrameDescription;
-                        int depthWidth = m_depthFrameDescription.Width;
-                        int depthHeight = m_depthFrameDescription.Height;
-
-                        CoordinateMapper coordinateMapper = m_kinectSensor.CoordinateMapper;
-                        int imgSize = depthWidth * depthHeight;
-
-                        // depth frame data is a 16 bit value
-                        //private ushort[] depthFrameData = null;
-                        //depthFrameData = new ushort[depthWidth * depthHeight];
-                        //private byte[] depthPixels = null;
-                        //this.depthPixels = new byte[depthWidth * depthHeight * BytesPerPixel];
-
-                        // Copy the pixel data from the image to a temporary array
-                        //depthFrame.CopyFrameDataToArray();
-
-                        // Get the z value from our x and y values
-                        CameraSpacePoint[] csp = new CameraSpacePoint[1920 * 1080];
-                        //coordinateMapper.MapColorFrameToCameraSpace(frameData, csp);
-                        return (int)csp[(1920 * Convert.ToInt16(y)) + Convert.ToInt16(x)].Z;
-                    }
-                }
-            }
-            return 0;   // fail.
-        }
-
-        // Handles the event which the sensor becomes unavailable (E.g. paused, closed, unplugged).
+        /// <summary>
+        /// Handles the event which the sensor becomes unavailable (E.g. paused, closed, unplugged).
+        /// </summary>
+        /// <param name="sender">object sending the event</param>
+        /// <param name="e">event arguments</param>
         private void Sensor_IsAvailableChanged(object sender, IsAvailableChangedEventArgs e)
         {
             // on failure, set the status text
-            StatusText = m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
-                : Properties.Resources.SensorNotAvailableStatusText;
+            this.StatusText = this.m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
+                                                            : Properties.Resources.SensorNotAvailableStatusText;
+        }
+
+        // Send commands from the kinect program to the crazyflie program
+        private void SendCommandToCrazyFlie(string command)
+        {
+            var buffer = Encoding.ASCII.GetBytes(command);   // Get the ASCII byte array
+            
+            kinectCrazyFlieWriter.Write(buffer);                        // Write the command
+
         }
     }
 }
