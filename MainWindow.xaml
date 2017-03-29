@@ -64,7 +64,7 @@
         <Label x:Name="GuideLabel2" Content="for the item you are calibrating. Correct calibration is when the object is the only clearly visible object." HorizontalAlignment="Left" Margin="30,340,0,0" Grid.Row="1" VerticalAlignment="Top"/>
         
         <Label x:Name="ViewTypeLabel" Content="Viewport Output:" HorizontalAlignment="Left" Margin="30,375,0,0" Grid.Row="1" VerticalAlignment="Top"/>
-        <ComboBox x:Name="ViewTypeComboBox" HorizontalAlignment="Left" Margin="30,400,0,0" Grid.Row="1" VerticalAlignment="Top" Width="175" SelectedIndex="0">
+        <ComboBox x:Name="ViewTypeComboBox" HorizontalAlignment="Left" Margin="30,400,0,0" Grid.Row="1" VerticalAlignment="Top" Width="175" SelectedIndex="1">
             <ComboBoxItem Content="Tracker Output"/>
             <ComboBoxItem Content="Crazy Fly Calibration"/>
             <ComboBoxItem Content="Target Calibration"/>

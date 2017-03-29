@@ -18,8 +18,9 @@ namespace Microsoft.Samples.Kinect.DepthBasics
     using Microsoft.Kinect;
     using System.IO.Pipes;
     using System.Text;
+    using System.Threading;
 
-    using ZeroMQ;
+    //using ZeroMQ;
     // Image processing libraries
     using Emgu.CV;
     using Emgu.CV.Structure;
@@ -30,7 +31,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
     /// Interaction logic for MainWindow
     /// </summary>
     public partial class MainWindow : Window, INotifyPropertyChanged
-    { 
+    {
         /// <summary>
         /// Active Kinect sensor
         /// </summary>
@@ -46,25 +47,27 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             in the same way as colour is, however the object colour is what we are filtering 
             by to track the objects as it is the more intuitive solution.
         */
-        
+
         // Colour bitmap to be recieved by the kinect
-        private FrameDescription    m_colourFrameDescription = null;
-        private WriteableBitmap     m_colourBitmap = null;
+        private FrameDescription m_colourFrameDescription = null;
+        private WriteableBitmap m_colourBitmap = null;
 
         // Depth for when we need it
         private FrameDescription m_depthFrameDescription = null;
 
         // The named pipe to communicate with the crazyflie
         private NamedPipeServerStream kinectCrazyFliePipe = new NamedPipeServerStream("CrazyPipe");
+
         private BinaryWriter kinectCrazyFlieWriter = null;
+        // private BinaryWriter kinectCrazyFlieWriter2 = null;
 
         /// <summary>
         /// Current status text to display
         /// </summary>
         private string m_statusText = null;
 
-        
-
+        char command;
+        bool started = false;
         /// <summary>
         /// Initialises a new instance of the MainWindow class.
         /// </summary>
@@ -93,20 +96,21 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             // set the status text
             this.StatusText = this.m_kinectSensor.IsAvailable ? Properties.Resources.RunningStatusText
                                                             : Properties.Resources.NoSensorStatusText;
-            
+
 
             this.DataContext = this;
             this.InitializeComponent();
 
             // Wait for a connection from the python script
-            Debug.Content = "Waiting For Connection";
+            //Debug.Content = "Waiting For Connection";
             kinectCrazyFliePipe.WaitForConnection();
 
             // Connection established; open the pipeline to write
-            Debug.Content = "Connected";
+            // Debug.Content = "Connected";
             kinectCrazyFlieWriter = new BinaryWriter(kinectCrazyFliePipe);
+            //   kinectCrazyFlieWriter2 = new BinaryWriter(kinectCrazyFliePipe);
         }
-    
+
         /// <summary>
         /// INotifyPropertyChangedPropertyChanged event to allow window controls to bind to changeable data
         /// </summary>
@@ -156,6 +160,10 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                 this.m_kinectSensor.Close();
                 this.m_kinectSensor = null;
             }
+
+            // Shutdown the crazyflie
+            SendCommandToCrazyFlie('s');
+
         }
 
         /// <summary>
@@ -206,7 +214,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     Image<Rgba, Byte> rgbImage = null;
                     Image<Hsv, Byte> hsvImage = null;
                     ProcessColourFrame(colorFrame, ref rgbImage, ref hsvImage);
-                    
+
                     // Filter the image to the calibration values of the Target Object
                     Mat targetThresholdMat = FilterHsvImage(hsvImage,
                         new Hsv(THueMinSlider.Value, TSatMinSlider.Value, TValMinSlider.Value),
@@ -249,9 +257,21 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                         CvInvoke.Imshow("Output", rgbImage);
 
                         // CRAZYFLY COMMUNICATION HERE - at this point we will lose track of local scope, alt we could store it...
-                        string value = cfx.ToString();
-                        SendCommandToCrazyFlie(value);
 
+                        // Navigate the craxyflie to the target
+                        if (!started)
+                        {
+                            // SendCommandToCrazyFlie('u');
+                            //  Thread.Sleep(1000);
+                            SendCommandToCrazyFlie('h');
+                            //Thread.Sleep(500);
+
+                            started = true;
+                        }
+                        else
+                        {
+                            MoveCrazyFlie(cfx, cfy, tx, ty);
+                        }
                     }
                     else if (ViewTypeComboBox.SelectedIndex == 1)
                     {
@@ -263,6 +283,61 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                     }
                 }
             }
+        }
+
+        private bool MoveCrazyFlie(int cfx, int cfy, int tx, int ty)
+        {
+            // Test using roll commands
+            //// Move to the left
+            //if (cfx < tx)
+            //{
+            //    if (command != 'p')
+            //    {
+            //        command = 'p';
+            //        SendCommandToCrazyFlie(command);
+            //    }
+            //}
+            //// Move to the right
+            //else if (cfx > tx)
+            //{
+            //    if (command != 's')
+            //    {
+            //        command = 's';
+            //        SendCommandToCrazyFlie(command);
+            //    }
+            //}
+
+            // Test using thrust
+            if (cfx < tx)
+            {
+                if (command != 'd')
+                {
+                    command = 'd';
+
+                    SendCommandToCrazyFlie(command);
+                }
+            }
+            else if (cfx > tx)
+            {
+                if (command != 'u')
+                {
+                    command = 'u';
+
+                    SendCommandToCrazyFlie(command);
+                }
+            }
+            else
+            {
+                if (command != 'h')
+                {
+                    command = 'h';
+
+                    SendCommandToCrazyFlie(command);
+                }
+            }
+
+            // Craxyflie had reached the target
+            return true;
         }
 
         // Process the provided colour frame and populate the given rgba and hsv images for us to use
@@ -281,7 +356,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
 
             // Rescale the frame by turning it to a bitmap
             Bitmap bmp = image.ToBitmap(width / 2, height / 2);
-            
+
             // "Save" the rescaled bitmap as a modifyable image
             rgbaImage = new Image<Rgba, byte>(bmp);
 
@@ -291,7 +366,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
 
         // Filter the image to the calibration values returning a threshold mat
         // Takes an image and lower / upper threshold values to filter by, returning the resulting threshold mat
-        private Mat FilterHsvImage(Image<Hsv, Byte> hsvImage, Hsv lower, Hsv upper )
+        private Mat FilterHsvImage(Image<Hsv, Byte> hsvImage, Hsv lower, Hsv upper)
         {
             // filter HSV image using calibration values from the GUI
             // http://docs.opencv.org/master/da/d97/tutorial_threshold_inRange.html
@@ -362,10 +437,10 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         }
 
         // Send commands from the kinect program to the crazyflie program
-        private void SendCommandToCrazyFlie(string command)
+        private void SendCommandToCrazyFlie(char command)
         {
-            var buffer = Encoding.ASCII.GetBytes(command);   // Get the ASCII byte array
-            
+            var buffer = Encoding.ASCII.GetBytes(command.ToString());   // Get the ASCII byte array
+                                                                        // var buffer2 = Encoding.ASCII.GetBytes(yVal);
             kinectCrazyFlieWriter.Write(buffer);                        // Write the command
 
         }

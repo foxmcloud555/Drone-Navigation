@@ -34,3 +34,16 @@ C:\Users\Lloyd\Desktop\Prog Things\Programming Things Group Assignment\obj\Debug
 C:\Users\Katie\Desktop\KinectProject\bin\AnyCPU\Debug\DepthBasics-WPF.exe.config
 C:\Users\Katie\Desktop\KinectProject\obj\Debug\DepthBasics-WPF.exe
 C:\Users\Katie\Desktop\KinectProject\obj\Debug\DepthBasics-WPF.pdb
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\KinectTracker.csprojResolveAssemblyReference.cache
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\MainWindow.baml
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\MainWindow.g.cs
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\App.g.cs
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\DepthBasics-WPF_MarkupCompile.cache
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\DepthBasics-WPF.g.resources
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\Microsoft.Samples.Kinect.DepthBasics.Properties.Resources.resources
+C:\Users\Katie\Desktop\KinectProject\obj\Debug\KinectTracker.csproj.GenerateResource.Cache
+C:\Users\Katie\Desktop\KinectProject\bin\AnyCPU\Debug\DepthBasics-WPF.exe
+C:\Users\Katie\Desktop\KinectProject\bin\AnyCPU\Debug\DepthBasics-WPF.pdb
+C:\Users\Katie\Desktop\KinectProject\bin\AnyCPU\Debug\Microsoft.Kinect.dll
+C:\Users\Katie\Desktop\KinectProject\bin\AnyCPU\Debug\Emgu.CV.World.xml
+C:\Users\Katie\Desktop\KinectProject\bin\AnyCPU\Debug\Microsoft.Kinect.xml
