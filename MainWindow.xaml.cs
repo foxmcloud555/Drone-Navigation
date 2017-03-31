@@ -66,7 +66,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         /// </summary>
         private string m_statusText = null;
 
-        char command;
+        char command, command2;
         bool started = false;
         /// <summary>
         /// Initialises a new instance of the MainWindow class.
@@ -162,7 +162,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             }
 
             // Shutdown the crazyflie
-            SendCommandToCrazyFlie('s');
+            SendCommandToCrazyFlie('s', 's');
 
         }
 
@@ -263,7 +263,7 @@ namespace Microsoft.Samples.Kinect.DepthBasics
                         {
                             // SendCommandToCrazyFlie('u');
                             //  Thread.Sleep(1000);
-                            SendCommandToCrazyFlie('h');
+                            SendCommandToCrazyFlie('h', 'b');
                             //Thread.Sleep(500);
 
                             started = true;
@@ -308,33 +308,41 @@ namespace Microsoft.Samples.Kinect.DepthBasics
             //}
 
             // Test using thrust
-            if (cfx < tx)
+            if (cfy < ty)
             {
                 if (command != 'd')
-                {
                     command = 'd';
-
-                    SendCommandToCrazyFlie(command);
-                }
             }
-            else if (cfx > tx)
+            else if (cfy > ty)
             {
                 if (command != 'u')
-                {
                     command = 'u';
-
-                    SendCommandToCrazyFlie(command);
-                }
             }
             else
             {
                 if (command != 'h')
-                {
                     command = 'h';
-
-                    SendCommandToCrazyFlie(command);
-                }
             }
+
+            if (cfx > tx)
+            {
+                if (command2 != 'r')
+                    command2 = 'r';
+            }
+
+            else if (cfx < tx)
+            {
+                if (command2 != 'l')
+                    command2 = 'l';
+            }
+            else
+            {
+                if (command2 != 'b')
+                    command2 = 'b';
+            }
+
+
+            SendCommandToCrazyFlie(command, command2);
 
             // Craxyflie had reached the target
             return true;
@@ -437,9 +445,9 @@ namespace Microsoft.Samples.Kinect.DepthBasics
         }
 
         // Send commands from the kinect program to the crazyflie program
-        private void SendCommandToCrazyFlie(char command)
+        private void SendCommandToCrazyFlie(char command, char command2)
         {
-            var buffer = Encoding.ASCII.GetBytes(command.ToString());   // Get the ASCII byte array
+            var buffer = Encoding.ASCII.GetBytes(command.ToString() + command2.ToString());   // Get the ASCII byte array
                                                                         // var buffer2 = Encoding.ASCII.GetBytes(yVal);
             kinectCrazyFlieWriter.Write(buffer);                        // Write the command
 

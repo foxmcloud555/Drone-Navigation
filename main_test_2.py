@@ -25,7 +25,7 @@ class CrazyflieController:
     ROLLLEFT = 5
     ROLLRIGHT = -5
 
-    INPUT_VAR = ' '
+    INPUT_VAR = "mn"
 
     def __init__(self, link_uri):
         self.lock = threading.Lock()
@@ -94,7 +94,7 @@ class CrazyflieController:
 
         Thread(target=self._flieInputLoop).start()
 
-        while temp != 's':
+        while temp != "ss":
 
             self._calibrate(temp)
 
@@ -114,72 +114,88 @@ class CrazyflieController:
         pitch_step = 1
         roll_mult = 1
         roll_step = 0.5
+        print(len(state))
+        #print(state)
+
+        udstate = state[0]
+        lrstate = state[1]
+        print(udstate)
+        print(lrstate)
+        # Hover state
 
         self._cf.commander.send_setpoint(self._roll, self._pitch, self._yaw, self._thrust)
 
-        # Hover state
-        if state == 'h':
+        if udstate == 'h':
+            print("hover")
             if self._thrust >= self.HOVER:
                 thrust_mult = -1
             self._thrust += thrust_step * thrust_mult
 
         # Yaw Left
-        elif state == 'l':
-            if self ._yaw >= self.YAWLEFT:
-                yaw_mult = -1
-            self._yaw += yaw_step * yaw_mult
+##        elif state == 'l':
+##            if self ._yaw >= self.YAWLEFT:
+##                yaw_mult = -1
+##            self._yaw += yaw_step * yaw_mult
 
         # Yaw Right
-        elif state == 'r':
-            yaw_mult = -1
-            if self ._yaw <= self.YAWRIGHT:
-                yaw_mult = 1
-            self._yaw += yaw_step * yaw_mult
+##        elif state == 'r':
+##            yaw_mult = -1
+##            if self ._yaw <= self.YAWRIGHT:
+##                yaw_mult = 1
+##            self._yaw += yaw_step * yaw_mult
 
         # Rise Upwards
-        elif state == 'u':
+        elif udstate == 'u':
+            print("up")
             if self._thrust >= self.UPTHRUST:
                 thrust_mult = -1
             self._thrust += thrust_step * thrust_mult
 
         # Go Downwards
-        elif state == 'd':
+        elif udstate == 'd':
+            print("down")
             thrust_mult = -1
             if self._thrust <= self.DOWNTHRUST:
                 thrust_mult = 1
             self._thrust += thrust_step * thrust_mult
 
         # Pitch Forwards
-        elif state == 'f':
-            pitch_mult = -1
-            if self._pitch <= self.FORWARDPITCH:
-                pitch_mult = 1
-            self._pitch += pitch_step * pitch_mult
+##        elif state == 'f':
+##            pitch_mult = -1
+##            if self._pitch <= self.FORWARDPITCH:
+##                pitch_mult = 1
+##            self._pitch += pitch_step * pitch_mult
 
         # Pitch Backwards
-        elif state == 'b':
-            if self._pitch >= self.BACKWARDPITCH:
-                pitch_mult = -1
-            self._pitch += pitch_step * pitch_mult
+##        elif state == 'b':
+##            if self._pitch >= self.BACKWARDPITCH:
+##                pitch_mult = -1
+##            self._pitch += pitch_step * pitch_mult
 
         # Roll Left
-        elif state == 'o':
-            self._roll = -1
+        if lrstate == 'r':
+            print("right")
+            self._roll = -10
 ##            if self._thrust >= self.ROLLLEFT:
 ##                roll_mult = -1
 ##            self._roll += roll_step * roll_mu
 
 
         # Roll Right
-        elif state == 'p':
-            self._roll = 1
+        elif lrstate == 'l':
+            print("LEFT")
+            self._roll = 10
 ##            roll_mult = -1
 ##            if self._thrust <= self.ROLLRIGHT:
 ##                roll_mult = 1
 ##            self._roll += roll_step * roll_mult
 
+        elif lrstate == 'b':
+            print("balance")
+            self._roll = 0
         self._cf.commander.send_setpoint(self._roll, self._pitch, self._yaw, self._thrust)
 
+        time.sleep(0.1)
 
     def _flieInputLoop(self):
         #Establish a connection between the flie and the kinect
@@ -189,12 +205,14 @@ class CrazyflieController:
             # Old code to read the input directly from the user
             #result = input("Enter command: ")
 
-            temp = kinectPipe.read(1)                    # Read the characters
+            temp = kinectPipe.read(2)                    # Read the characters
             kinectPipe.seek(0)
 
             # Convert from binary to ascii char
             result = temp.decode("utf-8")
-            print(result);
+
+
+          #  print(result);
             # If the data is different from the last command sent
             if result != self.INPUT_VAR:
                 self.lock.acquire()
