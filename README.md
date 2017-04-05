@@ -1,6 +1,9 @@
 # README #
 
-This repo contains a C# project for tracking coloured objects and sending data to a python script, as well as a python script that revives data from the C# project and controls a Crazyflie quadcopter.  
+This repo contains the following:
+
+1. C# project for tracking coloured objects and sending instructional data to a python script
+2. Python script that revives instructional data from the C# project and controls a Crazyflie quadcopter.  
 
 ### How do I get set up? ###
 
@@ -16,14 +19,15 @@ This repo contains a C# project for tracking coloured objects and sending data t
 # Deployment -
 
 * Make sure the crazyflie is turned on and the radio is plugged in.
-* Run the Kinect project first. It should run, but you will see nothing. This is normal, as nothing will launch until you have also run the associated python script. It must be done in this order. 
-* Once you have run the Python script, the Crazyflie should connect to the radio 
-*The Kinect user interface will now launch.
-*It will begin in Crazyflie tracking mode. Adjust the crazyflie tracking sliders (the ones on the left) until your blue tracking object is the only white blob on screen, and everything else is black.
-* In the drop down menu, switch to target tracking mode. Adjust the tracking sliders (on the right this time) until the target is the only white blob on screen. 
+* Run the Kinect project first. It will run but you will see nothing as nothing will launch until you have also run the associated python script. It must be done in this order. 
+* Once you have run the Python script, the Crazyflie should connect to the radio and the Kinect project will now launch.
+* It will begin in Crazyflie calibration mode. Calibrate the crazyflie tracking object (blue) using the sliders until your tracking object is the only white blob on screen.
+* In the drop down menu, switch to target calibration mode. Repeat the process for this (red) object. 
 * You can now switch to tracker output, but be aware this will begin the flight routine. 
-*The crazyflie will now move on a 2D plane towards the target!
+* The crazyflie will now move on a 2D plane towards the target!
 
 ### Troubleshooting ###
 
-* ensure your working environment does not have a source of strong natural light in the view of the Kinect (i.e a window)
+* ensure your working environment does not have a source of strong natural light in the view of the Kinect (i.e a window).
+* ensure that the crazyflie is flat and stationary during the project start up, as this may interfere with its internal calibration.
+* ensure that the tracking objects do not get too close to the Kinect.
