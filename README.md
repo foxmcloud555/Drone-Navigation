@@ -1,6 +1,6 @@
 # README #
 
-*This repo contains a C# project for tracking coloured objects and sending data to a python script, as well as a python script that revives data from the C# project and controls a Crazyflie quadcopter.  
+This repo contains a C# project for tracking coloured objects and sending data to a python script, as well as a python script that revives data from the C# project and controls a Crazyflie quadcopter.  
 
 ### How do I get set up? ###
 
