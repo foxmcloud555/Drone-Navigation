@@ -8,9 +8,9 @@ This repo contains a C# project for tracking coloured objects and sending data t
 * ensure you have at least Python 3.4 installed
 * you should use a solid blue object to track the Crazyflie, and a solid red object as your target. 
 
-# Dependencies - 
-*You will need cflib from Bitcraze, simply move the folder to whatever Python directory you are working in. You can find it here: https://github.com/bitcraze/crazyflie-lib-python 
-*You will also need Pyusb in the same directory. You can find that here: https://github.com/walac/pyusb
+# Dependencies  
+* You will need cflib from Bitcraze, simply move the folder to whatever Python directory you are working in. You can find it here: https://github.com/bitcraze/crazyflie-lib-python 
+* You will also need Pyusb in the same directory. You can find that here: https://github.com/walac/pyusb
 
 
 # Deployment -
