@@ -14,8 +14,8 @@ This repo contains a C# project for tracking coloured objects and sending data t
 
 
 # Deployment -
-*Make sure the crazyflie is turned on and the radio is plugged in.
 
+* Make sure the crazyflie is turned on and the radio is plugged in.
 * Run the Kinect project first. It should run, but you will see nothing. This is normal, as nothing will launch until you have also run the associated python script. It must be done in this order. 
 * Once you have run the Python script, the Crazyflie should connect to the radio 
 *The Kinect user interface will now launch.
@@ -26,5 +26,4 @@ This repo contains a C# project for tracking coloured objects and sending data t
 
 ### Troubleshooting ###
 
-*ensure your working environment does not have a source of strong natural light in the view of the Kinect (i.e a window)
-*
+* ensure your working environment does not have a source of strong natural light in the view of the Kinect (i.e a window)
